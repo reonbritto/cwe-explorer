@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CWE Details - PureSecure</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            PureSecure <span>CVE Explorer</span>
+        </a>
+        <nav>
+            <a href="/">Vulnerabilities</a>
+            <a href="/search.html">Search</a>
+        </nav>
+    </header>
+
+    <main class="container detail-page">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading CWE details...</p>
+        </div>
+
+        <div id="cweContent" style="display:none;">
+            <div class="cve-header">
+                <h1 id="cweTitle"></h1>
+            </div>
+
+            <div class="detail-section">
+                <h2>Description</h2>
+                <p id="cweDescription" class="description"></p>
+                <p style="margin-top:0.75rem;">
+                    <a id="mitreLink" href="#" target="_blank"
+                       rel="noopener noreferrer" class="view-all">
+                        View on MITRE CWE &rarr;
+                    </a>
+                </p>
+            </div>
+
+            <div class="detail-section">
+                <h2>Associated CVEs</h2>
+                <div id="loading2" class="loading">
+                    <div class="spinner"></div>
+                    <p>Fetching CVEs from NVD...</p>
+                </div>
+                <div id="cvesList"></div>
+            </div>
+        </div>
+
+        <div id="errorDiv" class="error-message" style="display:none;"></div>
+    </main>
+
+    <footer class="site-footer">
+        <p>PureSecure CVE Explorer &mdash; Data sourced from <a href="https://nvd.nist.gov" target="_blank" rel="noopener noreferrer">NVD</a> and <a href="https://cwe.mitre.org" target="_blank" rel="noopener noreferrer">MITRE CWE</a>.</p>
+    </footer>
+
+    <script src="/common.js"></script>
+    <script src="/cwe.js"></script>
+</body>
+</html>

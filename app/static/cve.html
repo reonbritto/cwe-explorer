@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVE Details - PureSecure</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            PureSecure <span>CVE Explorer</span>
+        </a>
+        <nav>
+            <a href="/">Vulnerabilities</a>
+            <a href="/search.html">Search</a>
+        </nav>
+    </header>
+
+    <main class="container detail-page">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading CVE details...</p>
+        </div>
+
+        <div id="cveContent" style="display:none;">
+            <div class="cve-header">
+                <h1 id="cveId"></h1>
+                <span id="severityBadge"></span>
+            </div>
+            <div class="cve-meta">
+                <span>Published: <strong id="published"></strong></span>
+                <span>Modified: <strong id="modified"></strong></span>
+            </div>
+
+            <div class="detail-section">
+                <h2>Description</h2>
+                <p id="description" class="description"></p>
+            </div>
+
+            <h2 class="section-title" style="margin-top:1.5rem;">CVSS Scores</h2>
+            <div class="cvss-panel" id="cvssPanel"></div>
+
+            <div class="detail-section">
+                <h2>CWE Classification</h2>
+                <div id="cweSection" class="cwe-tags"></div>
+            </div>
+
+            <div class="detail-section">
+                <h2>Affected Products</h2>
+                <div id="productsSection"></div>
+            </div>
+
+            <div class="detail-section">
+                <h2>References</h2>
+                <div id="referencesSection"></div>
+            </div>
+        </div>
+
+        <div id="errorDiv" class="error-message" style="display:none;"></div>
+    </main>
+
+    <footer class="site-footer">
+        <p>PureSecure CVE Explorer &mdash; Data sourced from <a href="https://nvd.nist.gov" target="_blank" rel="noopener noreferrer">NVD</a> and <a href="https://cwe.mitre.org" target="_blank" rel="noopener noreferrer">MITRE CWE</a>.</p>
+    </footer>
+
+    <script src="/common.js"></script>
+    <script src="/cve.js"></script>
+</body>
+</html>

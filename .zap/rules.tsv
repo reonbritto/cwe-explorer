@@ -1,0 +1,4 @@
+10003	IGNORE	(Vulnerable JS Library - false positive for static site)
+10015	IGNORE	(Incomplete or No Cache-control Header - GitHub Pages managed)
+10021	IGNORE	(X-Content-Type-Options Header Missing - GitHub Pages managed)
+10038	IGNORE	(Content Security Policy Header Not Set - static site)

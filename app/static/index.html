@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PureSecure - CVE Vulnerability Database</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="logo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            PureSecure <span>CVE Explorer</span>
+        </a>
+        <nav>
+            <a href="/" class="nav-active">Vulnerabilities</a>
+            <a href="/search.html">Search</a>
+        </nav>
+    </header>
+
+    <section class="hero-banner">
+        <div class="hero-inner">
+            <div class="hero-brand">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                PureSecure
+            </div>
+
+            <div class="hero-tagline">
+                <span class="tag-collect">Collect</span>
+                <span class="tag-display">Display</span>
+                <span class="tag-secure">Secure</span>
+            </div>
+
+            <div class="hero-title-pill">The Cyber Security Vulnerability Database</div>
+
+            <div class="hero-search">
+                <div class="search-container">
+                    <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" id="searchInput" placeholder="Search CVE-2021-44228, log4j, sql injection..." autocomplete="off">
+                    <button id="searchBtn">Search</button>
+                </div>
+                <div id="suggestions" class="suggestions-dropdown"></div>
+            </div>
+
+            <div class="quick-links">
+                <span class="quick-label">Popular:</span>
+                <a href="/search.html?keyword=log4j" class="quick-chip">Log4j</a>
+                <a href="/search.html?keyword=remote+code+execution" class="quick-chip">RCE</a>
+                <a href="/search.html?keyword=sql+injection" class="quick-chip">SQL Injection</a>
+                <a href="/search.html?keyword=cross-site+scripting" class="quick-chip">XSS</a>
+                <a href="/search.html?keyword=buffer+overflow" class="quick-chip">Buffer Overflow</a>
+            </div>
+        </div>
+    </section>
+
+    <main class="container">
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Latest Vulnerabilities</h2>
+                <a href="/search.html" class="view-all">View all &rarr;</a>
+            </div>
+
+            <div id="latestLoading" class="loading">
+                <div class="spinner"></div>
+                <p>Fetching latest CVEs from NVD...</p>
+            </div>
+
+            <div id="latestCves" class="cve-feed"></div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>PureSecure CVE Explorer &mdash; Data sourced from <a href="https://nvd.nist.gov" target="_blank" rel="noopener noreferrer">NVD</a> and <a href="https://cwe.mitre.org" target="_blank" rel="noopener noreferrer">MITRE CWE</a></p>
+    </footer>
+
+    <script src="/common.js"></script>
+    <script src="/dashboard.js"></script>
+</body>
+</html>

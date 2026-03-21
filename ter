@@ -1,0 +1,31 @@
+[33mcommit c93a4f66e2427f061bf9084fddf33202dfd017ad[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m)[m
+Author: Reon Britto <reonbritto@gmail.com>
+Date:   Sat Mar 21 20:54:40 2026 +0000
+
+    feat: PureSecure CVE vulnerability database with DevSecOps CI/CD
+    
+    Build a professional CVE vulnerability details website powered by
+    NVD API 2.0 with live data, search with autocomplete, and a full
+    DevSecOps GitHub Actions pipeline.
+    
+    Frontend:
+    - Homepage with latest CVEs feed (newest first)
+    - Search page with autocomplete suggestions and severity filter
+    - CVE detail page (CVSS scores, CWE mapping, affected products, references)
+    - CWE detail page with associated CVEs
+    - Clean professional design with green accent theme
+    
+    Backend:
+    - FastAPI with async NVD API 2.0 client
+    - SQLite caching layer with 24h TTL
+    - Rate limiting (6s interval for NVD)
+    - Built-in CWE reference dataset with live NVD fallback
+    - Input validation and XSS prevention
+    
+    DevSecOps Pipeline (9 stages):
+    - Lint (Flake8), SAST (Bandit), SCA (pip-audit + Safety)
+    - Secret scanning (Gitleaks), SBOM (CycloneDX)
+    - Unit tests (Pytest + coverage), Build, Deploy (GitHub Pages)
+    - DAST (OWASP ZAP baseline scan)
+    
+    Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>

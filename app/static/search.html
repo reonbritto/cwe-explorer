@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search CVEs - PureSecure</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            PureSecure <span>CVE Explorer</span>
+        </a>
+        <nav>
+            <a href="/">Vulnerabilities</a>
+            <a href="/search.html" class="nav-active">Search</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="search-page-header">
+            <h1>Search Vulnerabilities</h1>
+            <p>Query the NVD database by keyword, CVE ID, or filter by severity level.</p>
+        </div>
+
+        <div class="search-wrapper">
+            <div class="search-container">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="searchInput" placeholder="e.g. CVE-2021-44228, log4j, apache..." autocomplete="off">
+                <button id="searchBtn">Search</button>
+            </div>
+            <div id="suggestions" class="suggestions-dropdown"></div>
+        </div>
+
+        <div class="filters-bar">
+            <select id="severityFilter" class="filter-select">
+                <option value="">All Severities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+            </select>
+        </div>
+
+        <!-- Recommendations shown before search -->
+        <div id="recommendations" class="recommendations">
+            <h3>Suggested Searches</h3>
+            <div class="rec-grid">
+                <a href="/search.html?keyword=remote+code+execution" class="rec-card">
+                    <div class="rec-icon critical">!</div>
+                    <div>
+                        <strong>Remote Code Execution</strong>
+                        <p>Critical RCE vulnerabilities</p>
+                    </div>
+                </a>
+                <a href="/search.html?keyword=sql+injection" class="rec-card">
+                    <div class="rec-icon high">!</div>
+                    <div>
+                        <strong>SQL Injection</strong>
+                        <p>Database injection flaws</p>
+                    </div>
+                </a>
+                <a href="/search.html?keyword=cross-site+scripting" class="rec-card">
+                    <div class="rec-icon medium">!</div>
+                    <div>
+                        <strong>Cross-Site Scripting</strong>
+                        <p>XSS attack vectors</p>
+                    </div>
+                </a>
+                <a href="/search.html?keyword=privilege+escalation" class="rec-card">
+                    <div class="rec-icon high">!</div>
+                    <div>
+                        <strong>Privilege Escalation</strong>
+                        <p>Unauthorised access elevation</p>
+                    </div>
+                </a>
+                <a href="/search.html?keyword=denial+of+service" class="rec-card">
+                    <div class="rec-icon medium">!</div>
+                    <div>
+                        <strong>Denial of Service</strong>
+                        <p>Service disruption attacks</p>
+                    </div>
+                </a>
+                <a href="/search.html?keyword=authentication+bypass" class="rec-card">
+                    <div class="rec-icon critical">!</div>
+                    <div>
+                        <strong>Authentication Bypass</strong>
+                        <p>Auth mechanism failures</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Searching NVD database...</p>
+        </div>
+
+        <div id="resultsHeader" style="display:none;">
+            <div class="results-info">
+                <span id="resultsCount"></span>
+            </div>
+        </div>
+
+        <div id="results" class="cve-feed"></div>
+
+        <div id="pagination" class="pagination"></div>
+    </main>
+
+    <footer class="site-footer">
+        <p>PureSecure CVE Explorer &mdash; Data sourced from <a href="https://nvd.nist.gov" target="_blank" rel="noopener noreferrer">NVD</a> and <a href="https://cwe.mitre.org" target="_blank" rel="noopener noreferrer">MITRE CWE</a>.</p>
+    </footer>
+
+    <script src="/common.js"></script>
+    <script src="/search.js"></script>
+</body>
+</html>

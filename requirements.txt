@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+httpx
+pytest
+bandit
+flake8
+respx

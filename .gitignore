@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Cache & Data
+data/cve_cache.db
+data/*.xml
+data/*.xml.zip
+
+# Test & Coverage
+.pytest_cache/
+coverage-html/
+coverage.xml
+test-results.xml
+htmlcov/
+.coverage
+
+# Reports
+flake8-report.txt
+bandit-report.json
+pip-audit-report.json
+safety-report.json
+
+# Build
+_site/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.pem
+*.key
