@@ -5,9 +5,10 @@ __pycache__/
 venv/
 .venv/
 
-# IDE
+# IDE & Tools
 .vscode/
 .idea/
+.claude/
 
 # Cache & Data
 data/cve_cache.db
