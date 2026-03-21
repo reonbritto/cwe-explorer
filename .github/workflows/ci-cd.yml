@@ -159,34 +159,32 @@ jobs:
           pip install cyclonedx-bom
 
       - name: Generate CycloneDX SBOM (JSON)
-        run: |
-          cyclonedx-py environment \
-            --output sbom.json \
-            --format json
+        run: cyclonedx-py environment -o sbom.json --of json
 
       - name: Generate CycloneDX SBOM (XML)
-        run: |
-          cyclonedx-py environment \
-            --output sbom.xml \
-            --format xml
+        run: cyclonedx-py environment -o sbom.xml --of xml
 
       - name: Display SBOM summary
         run: |
           echo "=== SBOM Generated ==="
           echo "Format: CycloneDX"
           python -c "
-          import json
-          with open('sbom.json') as f:
-              sbom = json.load(f)
-          components = sbom.get('components', [])
-          print(f'Total components: {len(components)}')
-          for c in components:
-              name = c.get('name', 'unknown')
-              version = c.get('version', '?')
-              print(f'  - {name}@{version}')
+          import json, os
+          if os.path.exists('sbom.json'):
+              with open('sbom.json') as f:
+                  sbom = json.load(f)
+              components = sbom.get('components', [])
+              print(f'Total components: {len(components)}')
+              for c in components:
+                  name = c.get('name', 'unknown')
+                  version = c.get('version', '?')
+                  print(f'  - {name}@{version}')
+          else:
+              print('SBOM JSON not found, checking XML...')
           "
 
       - name: Upload SBOM artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sbom
