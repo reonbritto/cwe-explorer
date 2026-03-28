@@ -176,9 +176,9 @@ kubectl port-forward svc/prometheus 9090:9090 -n puresecure
 
 | Service | URL |
 |---------|-----|
-| **App** | http://localhost:8000 |
-| **Grafana** | http://localhost:3000 (admin / admin) |
-| **Prometheus** | http://localhost:9090 |
+| **App** | <http://localhost:8000> |
+| **Grafana** | <http://localhost:3000> (admin / admin) |
+| **Prometheus** | <http://localhost:9090> |
 
 **Ingress (optional):**
 
@@ -194,7 +194,7 @@ Add to `C:\Windows\System32\drivers\etc\hosts` (run Notepad as Admin):
 127.0.0.1  puresecure.local grafana.puresecure.local prometheus.puresecure.local
 ```
 
-Then access via `http://puresecure.local`.
+Then access via <http://puresecure.local>.
 
 ---
 
@@ -236,7 +236,7 @@ kubectl logs -l app=cwe-explorer -n puresecure --previous
 ```
 
 Common causes:
-- Missing secret (`app-secrets`) — create using step 4
+- Missing secret (`app-secrets`) or `GF_ADMIN_PASSWORD` key — recreate using step 4
 - Insufficient memory — increase Docker Desktop resources: **Settings > Resources > Memory**
 
 ### Pod stuck in `Pending`

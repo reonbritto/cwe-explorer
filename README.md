@@ -769,7 +769,8 @@ chmod +x k8s/setup.sh
 kubectl apply -f k8s/namespace.yaml
 kubectl create secret generic app-secrets -n puresecure \
   --from-literal=SERVICE_API_KEY="your-key" \
-  --from-literal=GF_ADMIN_PASSWORD="admin"
+  --from-literal=GF_ADMIN_PASSWORD="admin" \
+  --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -f k8s/app/ -f k8s/prometheus/ -f k8s/grafana/ -f k8s/ingress.yaml
 
 # Access via port-forward
