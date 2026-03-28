@@ -196,6 +196,34 @@ Add to `C:\Windows\System32\drivers\etc\hosts` (run Notepad as Admin):
 
 Then access via <http://puresecure.local>.
 
+**Azure AD Redirect URI (required for ingress):**
+
+When accessing the app via `http://puresecure.local` (ingress) instead of `http://localhost:8000` (port-forward), you **must** register the ingress URL as a redirect URI in your Azure AD app registration:
+
+1. Go to [Azure Portal](https://portal.azure.com) > **App registrations** > select your app
+2. Navigate to **Authentication** > **Platform configurations** > **Web**
+3. Add `http://puresecure.local` to the **Redirect URIs** list
+4. Click **Save**
+
+Without this, Microsoft login will fail with a redirect URI mismatch error, causing an infinite page refresh.
+
+---
+
+## Environment Variables
+
+The ConfigMap (`k8s/app/configmap.yaml`) supports these variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AZURE_TENANT_ID` | *(required)* | Microsoft Entra ID tenant |
+| `AZURE_CLIENT_ID` | *(required)* | App registration client ID |
+| `CORS_ORIGINS` | `http://localhost:8000,http://127.0.0.1:8000` | Comma-separated allowed origins for CORS |
+| `GRAFANA_URL` | `http://localhost:3000` | Grafana dashboard URL for nav links |
+| `PROMETHEUS_URL` | `http://localhost:9090` | Prometheus URL for nav links |
+| `LOCUST_URL` | `http://localhost:8089` | Locust URL for nav links (empty to hide) |
+
+When using ingress, set `CORS_ORIGINS` to include your ingress hostname (e.g. `http://puresecure.local`).
+
 ---
 
 ## Useful Commands
@@ -257,6 +285,21 @@ kubectl get pods -n ingress-nginx
 ```
 
 If ingress controller isn't installed, use port-forwarding instead.
+
+### Infinite page refresh after login
+
+If the page keeps refreshing after signing in with Microsoft:
+
+1. **Check Azure AD redirect URI** — the most common cause. Ensure the URL you access the app from (e.g. `http://puresecure.local` or `http://localhost:8000`) is registered as a redirect URI in your Azure AD app registration. See the "Azure AD Redirect URI" section above.
+
+2. **Check CORS_ORIGINS** — if accessing via ingress, ensure `CORS_ORIGINS` in the ConfigMap includes your hostname.
+
+3. **Clear browser storage** — open DevTools > Application > Local Storage and clear all entries for the site, then try logging in again.
+
+4. **Check pod logs** for 401 errors:
+   ```bash
+   kubectl logs -f deployment/cwe-explorer -n puresecure
+   ```
 
 ### Image pull errors
 

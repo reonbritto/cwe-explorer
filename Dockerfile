@@ -1,14 +1,21 @@
-FROM python:3.12-slim AS base
+# ── Stage 1: Builder ─────────────────────────────────
+FROM python:3.12-slim AS builder
 
-# Prevent Python from writing .pyc files and enable unbuffered output
+WORKDIR /build
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ── Stage 2: Runtime ─────────────────────────────────
+FROM python:3.12-slim AS runtime
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install dependencies in a separate layer for caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy only installed packages from builder
+COPY --from=builder /install /usr/local
 
 # Create data directory for cache and XML downloads
 RUN mkdir -p /app/data

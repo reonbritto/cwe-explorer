@@ -5,7 +5,3 @@ pydantic>=2.0
 defusedxml
 prometheus-client
 PyJWT[crypto]
-pytest
-bandit
-flake8
-respx

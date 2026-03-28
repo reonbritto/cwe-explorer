@@ -140,6 +140,28 @@ function createCWECard(cwe, index) {
 }
 
 /**
+ * Populate monitoring-service links in the navbar from /api/services.
+ * Uses data-service attributes to match links to their URLs.
+ */
+async function loadServiceLinks() {
+    try {
+        var resp = await fetch("/api/services");
+        var urls = await resp.json();
+        document.querySelectorAll('[data-service]').forEach(function (el) {
+            var key = el.getAttribute('data-service');
+            if (urls[key]) {
+                el.href = urls[key];
+                el.style.display = '';
+            } else {
+                el.style.display = 'none';
+            }
+        });
+    } catch (e) {
+        // keep default href values on error
+    }
+}
+
+/**
  * Initialise auth guard — call this at the top of every protected page.
  * Ensures the user is signed in before the page loads.
  * Adds user info + logout button to the navbar.

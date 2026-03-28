@@ -14,8 +14,11 @@ var loginRequest = {
 /**
  * Initialise MSAL with config fetched from /api/config.
  * Must be called before any other auth function.
+ * Idempotent — safe to call multiple times.
  */
 async function initAuth() {
+    if (msalInstance) return true;
+
     try {
         var resp = await fetch("/api/config");
         var cfg = await resp.json();
@@ -32,8 +35,8 @@ async function initAuth() {
                 redirectUri: window.location.origin,
             },
             cache: {
-                cacheLocation: "sessionStorage",
-                storeAuthStateInCookie: false,
+                cacheLocation: "localStorage",
+                storeAuthStateInCookie: true,
             }
         };
 
@@ -43,6 +46,12 @@ async function initAuth() {
         var response = await msalInstance.handleRedirectPromise();
         if (response) {
             msalInstance.setActiveAccount(response.account);
+        } else {
+            // Fallback: pick up cached account from localStorage
+            var accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                msalInstance.setActiveAccount(accounts[0]);
+            }
         }
 
         return true;

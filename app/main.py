@@ -57,12 +57,15 @@ app = FastAPI(
 )
 
 # CORS — allow browser-based MSAL.js auth flow
+_cors_raw = os.environ.get(
+    "CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000"
+)
+_cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
+    allow_origins=_cors_origins,
+    allow_credentials=True,
     allow_headers=["Authorization", "Content-Type"],
     allow_methods=["GET"],
 )
@@ -106,6 +109,16 @@ def api_config():
     return {
         "client_id": os.environ.get("AZURE_CLIENT_ID", ""),
         "tenant_id": os.environ.get("AZURE_TENANT_ID", ""),
+    }
+
+
+@app.get("/api/services")
+def api_services():
+    """Return monitoring service URLs for the frontend nav (public)."""
+    return {
+        "grafana": os.environ.get("GRAFANA_URL", "http://localhost:3000"),
+        "prometheus": os.environ.get("PROMETHEUS_URL", "http://localhost:9090"),
+        "locust": os.environ.get("LOCUST_URL", "http://localhost:8089"),
     }
 
 

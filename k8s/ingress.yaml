@@ -7,6 +7,9 @@ metadata:
     app.kubernetes.io/part-of: puresecure-cve-explorer
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "PURESECURE_AFFINITY"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "3600"
 spec:
   ingressClassName: nginx
   rules:

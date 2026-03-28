@@ -22,9 +22,9 @@
                 <button class="nav-dropdown-btn">Services &#9662;</button>
                 <div class="nav-dropdown-menu">
                     <span class="dropdown-section">Monitoring</span>
-                    <a href="http://localhost:3000" target="_blank">Grafana</a>
-                    <a href="http://localhost:9090" target="_blank">Prometheus</a>
-                    <a href="http://localhost:8089" target="_blank">Locust</a>
+                    <a href="http://localhost:3000" data-service="grafana" target="_blank">Grafana</a>
+                    <a href="http://localhost:9090" data-service="prometheus" target="_blank">Prometheus</a>
+                    <a href="http://localhost:8089" data-service="locust" target="_blank">Locust</a>
                     <span class="dropdown-section">API Endpoints</span>
                     <a href="/docs" target="_blank">Swagger Docs</a>
                 </div>
@@ -136,6 +136,7 @@
             try {
                 var ok = await requireAuth();
                 if (!ok) return;
+                loadServiceLinks();
                 var s = document.createElement('script');
                 s.src = '/cwe.js?v=4';
                 document.body.appendChild(s);
