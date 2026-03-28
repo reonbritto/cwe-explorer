@@ -206,7 +206,7 @@ cve-new-bri/
 │   ├── REPORT.md                       # Security design report
 │   └── kubernetes-deployment.md        # K8s deployment guide (Docker Desktop + AKS)
 ├── .env.example                        # Environment variable template
-├── Dockerfile                          # Multi-stage Python 3.10-slim image
+├── Dockerfile                          # Multi-stage Python 3.12-slim image
 ├── docker-compose.yml                  # Full stack: web, prometheus, grafana, locust
 ├── requirements.txt                    # Python dependencies
 ├── requirements-dev.txt                # Dev dependencies (pytest, bandit, flake8)
@@ -240,11 +240,11 @@ docker compose up --build
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| **CWE Explorer API** | http://localhost:8000 | Azure Entra ID token |
-| **API Docs (Swagger)** | http://localhost:8000/docs | — |
-| **Prometheus** | http://localhost:9090 | — |
-| **Grafana** | http://localhost:3000 | See `.env` (`GF_ADMIN_USER` / `GF_ADMIN_PASSWORD`) |
-| **Locust** | http://localhost:8089 | — |
+| **CWE Explorer API** | <http://localhost:8000> | Azure Entra ID token |
+| **API Docs (Swagger)** | <http://localhost:8000/docs> | — |
+| **Prometheus** | <http://localhost:9090> | — |
+| **Grafana** | <http://localhost:3000> | See `.env` (`GF_ADMIN_USER` / `GF_ADMIN_PASSWORD`) |
+| **Locust** | <http://localhost:8089> | — |
 
 ### Option 2: Local Development
 
@@ -474,7 +474,7 @@ The `locust/locustfile.py` defines weighted scenarios:
 | Risk Scores | 1 | `GET /api/analytics/cwe-risk` |
 | Health Check | 1 | `GET /` |
 
-Access the Locust UI at http://localhost:8089 to configure users and spawn rate.
+Access the Locust UI at <http://localhost:8089> to configure users and spawn rate.
 
 ---
 
@@ -645,6 +645,7 @@ erDiagram
 ```
 
 **Cache behavior:**
+
 - Both tables use `INSERT OR REPLACE` for upserts
 - TTL is **24 hours**, checked at read time via `_is_expired()`
 - Expired entries are cleaned up at startup via `cleanup_expired()`

@@ -49,3 +49,5 @@ Thumbs.db
 # Monitoring data (Prometheus/Grafana volumes)
 prometheus-data/
 grafana-data/
+
+docs
