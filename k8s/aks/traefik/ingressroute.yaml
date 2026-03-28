@@ -1,0 +1,78 @@
+# ── HTTP → HTTPS redirect ────────────────────────────────
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: web-http-redirect
+  namespace: puresecure
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`reondev.top`)
+      kind: Rule
+      middlewares:
+        - name: redirect-https
+      services:
+        - name: web
+          port: 8000
+---
+# ── Main app: reondev.top (HTTPS) ───────────────────────
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: web-https
+  namespace: puresecure
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`reondev.top`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+        - name: rate-limit
+      services:
+        - name: web
+          port: 8000
+  tls:
+    secretName: reondev-top-tls
+---
+# ── Grafana: grafana.reondev.top (HTTPS) ────────────────
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana-https
+  namespace: puresecure
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`grafana.reondev.top`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+      services:
+        - name: grafana
+          port: 3000
+  tls:
+    secretName: reondev-top-tls
+---
+# ── Prometheus: prometheus.reondev.top (HTTPS) ──────────
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: prometheus-https
+  namespace: puresecure
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`prometheus.reondev.top`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+      services:
+        - name: prometheus
+          port: 9090
+  tls:
+    secretName: reondev-top-tls

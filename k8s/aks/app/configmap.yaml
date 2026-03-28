@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: puresecure
+  labels:
+    app: cwe-explorer
+data:
+  PYTHONUNBUFFERED: "1"
+  # Set these to your Azure Entra ID app registration values
+  AZURE_TENANT_ID: ""
+  AZURE_CLIENT_ID: ""
+  CORS_ORIGINS: "https://reondev.top,http://localhost:8000,http://127.0.0.1:8000"
+  GRAFANA_URL: "https://grafana.reondev.top"
+  PROMETHEUS_URL: "https://prometheus.reondev.top"
+  LOCUST_URL: ""

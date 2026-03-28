@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locust
+  namespace: puresecure
+  labels:
+    app: locust
+    tier: testing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust
+  template:
+    metadata:
+      labels:
+        app: locust
+        tier: testing
+    spec:
+      containers:
+        - name: locust
+          image: locustio/locust:2.24.1
+          ports:
+            - name: http
+              containerPort: 8089
+              protocol: TCP
+          args:
+            - "-f"
+            - "/mnt/locust/locustfile.py"
+            - "--host=http://web:8000"
+          env:
+            - name: SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SERVICE_API_KEY
+          volumeMounts:
+            - name: locust-script
+              mountPath: /mnt/locust
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: locust-script
+          configMap:
+            name: locust-script
