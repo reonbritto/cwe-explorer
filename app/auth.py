@@ -75,7 +75,8 @@ async def get_current_user(
             signing_key.key,
             algorithms=["RS256"],
             audience=CLIENT_ID,
-            options={"verify_iss": False},
+            options={"verify_iss": False, "verify_exp": True},
+            issuer=None,  # Entra ID uses multiple issuers; audience check is sufficient
         )
         return payload
     except PyJWTError as exc:

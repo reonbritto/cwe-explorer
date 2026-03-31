@@ -1,24 +1,29 @@
 # Values for Bitnami ExternalDNS Helm Chart
 # Usage: helm upgrade --install external-dns bitnami/external-dns -n external-dns --create-namespace -f helm/external-dns-values.yaml
 provider: azure
-azure:
-  # The Resource Group where the Azure DNS Zone (reondev.top) lives
-  resourceGroup: "your-dns-resource-group"
-  tenantId: "your-azure-tenant-id"
-  subscriptionId: "your-azure-subscription-id"
-  useWorkloadIdentityExtension: true
 
-# The Client ID of the User-Assigned Managed Identity that has "DNS Zone Contributor" role
 env:
   - name: AZURE_CLIENT_ID
-    value: "your-managed-identity-client-id"
+    value: "6c126e42-29c3-4f15-a28c-56c41e39cc6d"
+
+secretConfiguration:
+  enabled: true
+  mountPath: "/etc/kubernetes"
+  data:
+    azure.json: |
+      {
+        "tenantId": "d1d16433-e375-4076-a7ea-c57bb79df0de",
+        "subscriptionId": "dfed6615-05cd-434d-b0e0-7dea9e050738",
+        "resourceGroup": "sa",
+        "useWorkloadIdentityExtension": true
+      }
 
 serviceAccount:
   create: true
   name: external-dns-sa
   annotations:
     # This instructs Kubernetes to use Azure Workload Identity to fetch Azure tokens automatically
-    azure.workload.identity/client-id: "your-managed-identity-client-id"
+    azure.workload.identity/client-id: "6c126e42-29c3-4f15-a28c-56c41e39cc6d"
 
 podLabels:
   azure.workload.identity/use: "true"

@@ -45,12 +45,10 @@ app:
     fsGroup: 1000
   config:
     PYTHONUNBUFFERED: "1"
-    AZURE_TENANT_ID: "d1d16433-e375-4076-a7ea-c57bb79df0de"
-    AZURE_CLIENT_ID: "7587a506-259a-4198-bcc5-5a6d629453f0"
-    CORS_ORIGINS: "https://reondev.top,http://localhost:8000,http://127.0.0.1:8000"
+    CORS_ORIGINS: "https://reondev.top"
     GRAFANA_URL: "https://grafana.reondev.top"
-    PROMETHEUS_URL: ""
-    LOCUST_URL: ""
+    PROMETHEUS_URL: "http://prometheus:9090"
+    LOCUST_URL: "http://locust:8089"
 # ─────────────────────────────────────────────────────────
 #  Prometheus
 # ─────────────────────────────────────────────────────────
@@ -102,11 +100,11 @@ grafana:
       allowSignUp: "true"
       autoLogin: "false"
       scopes: "openid profile email User.Read"
-      clientId: "7587a506-259a-4198-bcc5-5a6d629453f0"
+      # clientId is pulled from Azure Key Vault via ExternalSecrets (AZURE_CLIENT_ID)
       authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
       tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token"
     disableLoginForm: "false"
-    usersAllowSignUp: "true"
+    usersAllowSignUp: "false"
     usersAutoAssignOrg: "true"
     usersAutoAssignOrgRole: "Viewer"
     serverRootUrl: "https://grafana.reondev.top"
@@ -157,13 +155,17 @@ certManager:
 externalSecrets:
   enabled: true
   keyVaultName: kv-puresecure-prod
-  tenantId: "d1d16433-e375-4076-a7ea-c57bb79df0de"
-  managedIdentityClientId: "e66581ac-15f7-4fb8-8128-1b1e05654fc2" # Set to the Azure Managed Identity Client ID
+  tenantId: "d1d16433-e375-4076-a7ea-c57bb79df0de" # Azure tenant for Key Vault access (required by SecretStore)
+  managedIdentityClientId: "1752dec0-b5fe-4548-b6d9-26bd66798232" # Set to the Azure Managed Identity Client ID
   secretStoreName: azure-keyvault
   refreshInterval: 1h
   secrets:
     - kubeSecretKey: SERVICE_API_KEY
       remoteRef: service-api-key
+    - kubeSecretKey: AZURE_TENANT_ID
+      remoteRef: azure-tenant-id
+    - kubeSecretKey: AZURE_CLIENT_ID
+      remoteRef: azure-client-id
     - kubeSecretKey: GF_ADMIN_PASSWORD
       remoteRef: gf-admin-password
     - kubeSecretKey: GF_AUTH_AZUREAD_CLIENT_SECRET

@@ -1,6 +1,6 @@
 # Project Roadmap
 
-- [ ] Terraform to create AKS infrastructure
+- [x] Terraform to create AKS infrastructure
 - [x] Azure Key Vault to store secrets (External Secrets Operator configured)
 - [x] CD: ArgoCD pipeline setup and verified
 

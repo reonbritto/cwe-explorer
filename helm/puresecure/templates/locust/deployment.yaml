@@ -19,6 +19,8 @@ spec:
       containers:
         - name: locust
           image: {{ .Values.locust.image }}
+          securityContext:
+            allowPrivilegeEscalation: false
           ports:
             - name: http
               containerPort: {{ .Values.locust.port }}

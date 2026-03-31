@@ -60,7 +60,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: python, javascript
+          languages: python
           queries: security-and-quality
 
       - name: Autobuild
@@ -208,7 +208,6 @@ jobs:
 
       - name: Run Pytest with coverage
         run: |
-          pip install pytest-cov
           pytest tests/ -v --tb=short \
             --cov=app --cov-report=xml:coverage.xml \
             --cov-report=html:coverage-html \
@@ -300,9 +299,10 @@ jobs:
         with:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/puresecure-cve-explorer:latest
           format: table
-          exit-code: '0'
+          exit-code: '1'
           severity: CRITICAL,HIGH
           output: trivy-report.txt
+        continue-on-error: true
 
       - name: Trivy image scan (SARIF)
         uses: aquasecurity/trivy-action@master

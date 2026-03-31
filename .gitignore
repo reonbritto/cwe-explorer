@@ -16,6 +16,7 @@ data/cache.db
 data/cve_cache.db
 data/*.xml
 data/*.xml.zip
+data/*.json
 
 # Test & Coverage
 .pytest_cache/
@@ -43,6 +44,14 @@ Thumbs.db
 *.pem
 *.key
 
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/terraform.tfvars
+terraform/*.auto.tfvars
+
 # Docker
 .dockerignore
 
@@ -54,4 +63,3 @@ grafana-data/
 docs/
 
 data/
-/tests/__pycache__

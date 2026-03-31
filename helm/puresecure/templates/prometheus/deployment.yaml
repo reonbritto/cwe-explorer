@@ -28,6 +28,8 @@ spec:
       containers:
         - name: prometheus
           image: {{ .Values.prometheus.image }}
+          securityContext:
+            allowPrivilegeEscalation: false
           args:
             - "--config.file=/etc/prometheus/prometheus.yml"
             - "--storage.tsdb.retention.time={{ .Values.prometheus.retention }}"

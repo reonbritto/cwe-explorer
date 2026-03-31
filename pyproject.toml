@@ -1,5 +1,5 @@
 [project]
-name = "puresecure-cwe-explorer"
+name = "puresecure-cve-explorer"
 version = "2.0.0"
 description = "CWE Weakness Database - PureSecure"
 requires-python = ">=3.10"

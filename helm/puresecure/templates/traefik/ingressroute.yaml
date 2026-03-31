@@ -22,6 +22,9 @@ kind: IngressRoute
 metadata:
   name: web-https
   namespace: {{ .Values.namespace }}
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: {{ .Values.ingress.hosts.app }}
+    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.hosts.app }}
 spec:
   entryPoints:
     - websecure
@@ -43,6 +46,9 @@ kind: IngressRoute
 metadata:
   name: grafana-https
   namespace: {{ .Values.namespace }}
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: {{ .Values.ingress.hosts.grafana }}
+    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.hosts.grafana }}
 spec:
   entryPoints:
     - websecure

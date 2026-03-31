@@ -28,6 +28,8 @@ spec:
       containers:
         - name: grafana
           image: {{ .Values.grafana.image }}
+          securityContext:
+            allowPrivilegeEscalation: false
           ports:
             - name: http
               containerPort: {{ .Values.grafana.port }}
@@ -43,6 +45,11 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: GF_ADMIN_PASSWORD
+            - name: GF_AUTH_AZUREAD_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AZURE_CLIENT_ID
             - name: GF_AUTH_AZUREAD_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
