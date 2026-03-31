@@ -9,6 +9,7 @@
 ![Grafana](https://img.shields.io/badge/Grafana-10.4.2-f46800)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ed)
 ![License](https://img.shields.io/badge/License-MIT-green)
+[![Deployment Docs](https://img.shields.io/badge/Docs-Deployment_Architecture-purple)](DEPLOYMENT.md)
 
 ---
 
@@ -17,6 +18,8 @@
 PureSecure CVE Explorer is a web-based security vulnerability database that queries the **NIST National Vulnerability Database (NVD) API 2.0** in real time. It provides a clean, searchable interface for browsing CVEs (Common Vulnerabilities and Exposures), mapping them to CWE (Common Weakness Enumeration) classifications, and visualizing severity analytics.
 
 The backend is built with **FastAPI** and serves a lightweight **vanilla JavaScript** frontend. An **SQLite caching layer** with a 24-hour TTL ensures fast responses while respecting NVD API rate limits. All API endpoints (except health and config) are protected by **Microsoft Entra ID (Azure AD) JWT authentication**. The full stack runs in **Docker Compose** with integrated **Prometheus** metrics, **Grafana** dashboards, and **Locust** load testing.
+
+> 📚 **Deployment Architecture:** For a comprehensive, academic breakdown of the GitOps deployment methodologies, ArgoCD synchronization, Azure Key Vault integration, and container orchestration leveraged in this project, please see the formally-structured [Deployment Architecture Deep Dive (DEPLOYMENT.md)](DEPLOYMENT.md).
 
 ---
 
