@@ -1,11 +1,10 @@
-teraaform to create infra
-azure key vault to store secrets or vault
+## Project Roadmap
 
-CD:
-ArogoCD
+- [ ] Terraform to create AKS infrastructure
+- [x] Azure Key Vault to store secrets (External Secrets Operator configured)
+- [x] CD: ArgoCD pipeline setup and verified
 
-
-current stack:
-app - cwe explorer
-identity - azure entra id
-monitering application - grafana and prometheus
+### Current Stack:
+- **App:** CWE Explorer (Python/FastAPI)
+- **Identity:** Azure Entra ID (Workload Identity)
+- **Monitoring:** Grafana and Prometheus
