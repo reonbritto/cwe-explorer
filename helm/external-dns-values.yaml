@@ -1,0 +1,40 @@
+# Values for Bitnami ExternalDNS Helm Chart
+# Usage: helm upgrade --install external-dns bitnami/external-dns -n external-dns --create-namespace -f helm/external-dns-values.yaml
+provider: azure
+azure:
+  # The Resource Group where the Azure DNS Zone (reondev.top) lives
+  resourceGroup: "your-dns-resource-group"
+  tenantId: "your-azure-tenant-id"
+  subscriptionId: "your-azure-subscription-id"
+  useWorkloadIdentityExtension: true
+
+# The Client ID of the User-Assigned Managed Identity that has "DNS Zone Contributor" role
+env:
+  - name: AZURE_CLIENT_ID
+    value: "your-managed-identity-client-id"
+
+serviceAccount:
+  create: true
+  name: external-dns-sa
+  annotations:
+    # This instructs Kubernetes to use Azure Workload Identity to fetch Azure tokens automatically
+    azure.workload.identity/client-id: "your-managed-identity-client-id"
+
+podLabels:
+  azure.workload.identity/use: "true"
+
+# Tell ExternalDNS to watch Traefik IngressRoutes and standard Services to grab IP addresses
+sources:
+  - service
+  - ingress
+  - traefik-proxy
+
+# Restrict what domains it is allowed to modify in Azure DNS!
+domainFilters:
+  - reondev.top
+
+# A unique identifier so ExternalDNS knows which records it created vs humans created
+txtOwnerId: "puresecure-aks"
+
+rbac:
+  create: true

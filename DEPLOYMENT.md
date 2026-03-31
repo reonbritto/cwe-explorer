@@ -62,12 +62,33 @@ When the blueprint is read, Kubernetes creates these specific things:
 2. **Service (The Receptionist):** 
    If you have 5 copies of your app running, which one should answer a user's request? The **Service** acts as the receptionist. It provides one single internal phone number and automatically routes incoming traffic to whichever app copy is currently least busy.
 
-3. **IngressRoute / Traefik (The Front Door Bouncer):** 
-   The pods and the receptionist are hidden deep inside the hotel. The **IngressRoute** is the bouncer at the public front door. When someone types `https://puresecure.reondev.top` into their browser, the IngressRoute checks their request, secures it with an SSL padlock (HTTPS), and escorts them to the receptionist.
+3. **IngressRoute / Traefik (The Front Door Bouncer)**: 
+   The pods and the receptionist are hidden deep inside the hotel. The **IngressRoute** is the bouncer at the public front door. When someone types `https://puresecure.reondev.top` into their browser, the IngressRoute checks their request, secures it with an SSL padlock (HTTPS), and escorts them to the receptionist. Because we installed **ExternalDNS**, the moment this bouncer is hired, his street address (IP) is immediately broadcasted to the Azure DNS Phonebook seamlessly!
 
 ---
 
 ## 4. How do we Handle Passwords? (Secrets Management)
+
+### Step A: Install Core Infrastructure Operators (ESO & ExternalDNS)
+Before deploying our custom security and routing logic, the cluster needs to understand how to talk to Azure securely. We install two critical background robots via Helm:
+
+**1. External Secrets Operator (ESO)**
+Allows the cluster to extract passwords from Azure Key Vault without saving them in Git.
+```bash
+helm repo add external-secrets https://charts.external-secrets.io
+helm install external-secrets external-secrets/external-secrets \
+    -n external-secrets --create-namespace \
+    --set installCRDs=true
+```
+
+**2. ExternalDNS**
+When we create a new website (like `puresecure.reondev.top`), this robot automatically logs into Azure DNS and creates the correct `A Record` pointing to the Traefik Load Balancer IP. You don't have to manually update your domain registrar! We use our pre-configured file `helm/external-dns-values.yaml` which securely links to Azure using Workload Identity:
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install external-dns bitnami/external-dns \
+    -n external-dns --create-namespace \
+    -f helm/external-dns-values.yaml
+```
 
 Our app needs passwords to survive. For example, it needs the `SERVICE_API_KEY` to talk to our database, and specific Azure IDs to allow users to "Log in with Microsoft."
 
