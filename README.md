@@ -34,10 +34,10 @@ The backend is built with **FastAPI** and serves a lightweight **vanilla JavaScr
 - **Grafana Dashboards** -- Pre-provisioned dashboard with 18 panels across 5 sections
 - **Locust Load Testing** -- Pre-built scenarios covering all API endpoints
 - **Intelligent Caching** -- SQLite cache with 24-hour TTL and startup cleanup
-- **Kubernetes Ready** -- Production AKS deployment with Traefik ingress, Let's Encrypt TLS, and Azure AD OAuth for Grafana
+- **Kubernetes Native** -- Production AKS deployment with Traefik ingress, Let's Encrypt TLS, and Azure AD OAuth
+- **GitOps Deployment** -- Automated Continuous Deployment pipeline using ArgoCD and Helm
+- **Secure Secret Management** -- Azure Key Vault integration via Workload Identity and External Secrets Operator
 - **Request Logging** -- Structured logs with method, path, status, and duration
-- **Input Validation** -- Regex-based CVE/CWE ID validation and query sanitization
-- **XSS Prevention** -- HTML escaping via `textContent` and `encodeURIComponent`
 - **CI/CD Security Pipeline** -- Lint, SAST, SCA, secrets scan, SBOM, Trivy container scan, and Docker push
 - **Dockerized** -- Single `docker compose up` deploys the full stack
 
@@ -195,21 +195,20 @@ cve-new-bri/
 │   ├── test_nvd_client.py              # NVD response parser tests
 │   └── test_security.py               # Input validation tests
 ├── data/                               # Auto-created: SQLite cache database
-├── k8s/aks/                           # AKS (Azure Kubernetes Service) manifests
-│   ├── namespace.yaml                 # puresecure namespace
-│   ├── setup.sh                       # Automated AKS deployment script
-│   ├── teardown.sh                    # Clean removal script
-│   ├── app/                           # Web app: Deployment, Service, ConfigMap, PVC
-│   ├── cert-manager/                  # TLS: ClusterIssuer, Certificates (Let's Encrypt)
-│   ├── grafana/                       # Grafana: Deployment, Service, ConfigMaps (Azure AD OAuth), PVC
-│   ├── locust/                        # Locust: Deployment, Service, ConfigMap
-│   ├── prometheus/                    # Prometheus: Deployment, Service, ConfigMap, PVC
-│   └── traefik/                       # Ingress: IngressRoute, Middleware (security headers, rate limit)
+├── helm/puresecure/                    # Primary Application Helm Chart
+│   ├── Chart.yaml                      # Chart metadata
+│   ├── values.yaml                     # Application config (image tag synced by GitHub Actions)
+│   └── templates/                      # K8s resources, Traefik routes, ExternalSecrets
+├── argocd/                             # GitOps Configuration
+│   ├── application.yaml                # ArgoCD App syncing from GitHub `main`
+│   ├── project.yaml                    # ArgoCD secure project configuration
+│   └── ingressroute.yaml               # Traefik routing rules for ArgoCD web interface
 ├── docs/
 │   ├── REPORT.md                       # Security design report
+│   ├── cd-gitops-guide.md              # ArgoCD + Helm + Key Vault GitOps Guide (Latest)
+│   ├── aks-deployment.md               # Legacy manual AKS guide
 │   ├── kubernetes-deployment.md        # Local K8s guide (Docker Desktop)
-│   ├── aks-deployment.md              # Production AKS deployment guide
-│   └── developer-guide.md            # Developer onboarding & workflow
+│   └── developer-guide.md              # Developer onboarding & workflow
 ├── .env.example                        # Environment variable template
 ├── Dockerfile                          # Multi-stage Python 3.12-slim image
 ├── docker-compose.yml                  # Full stack: web, prometheus, grafana, locust
@@ -725,8 +724,9 @@ The project uses a GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) with 
 | 8. Docker Build | Docker Buildx | Build container image with GitHub Actions cache |
 | 9. Trivy Scan | Trivy | Container vulnerability scanning (SARIF upload to GitHub Security) |
 | 10. Docker Push | Docker Push | Push to DockerHub on main/master branch |
+| 11. GitOps Deploy | Git Commit | Bot commits the new Docker tag to `helm/puresecure/values.yaml` to trigger ArgoCD sync |
 
-Stages 1--7 run in parallel on every push and pull request. Stages 8--10 run sequentially on push to `main`/`master` after all other stages pass.
+Stages 1--7 run in parallel on every push and pull request. Stages 8--11 run sequentially on push to `main`/`master` after all other stages pass.
 
 ### DockerHub Deployment
 
@@ -762,13 +762,14 @@ docker build -t puresecure-cve-explorer .
 
 ## Kubernetes Deployment
 
-The project deploys to **Azure Kubernetes Service (AKS)** with Traefik ingress, Let's Encrypt TLS, and Microsoft Entra ID authentication.
+The project deploys to **Azure Kubernetes Service (AKS)** with Traefik ingress, Let's Encrypt TLS, Microsoft Entra ID authentication, and Azure Key Vault secret management orchestrated flawlessly via **ArgoCD GitOps**.
 
 | Environment | Guide | Description |
 |-------------|-------|-------------|
-| **AKS (Production)** | [docs/aks-deployment.md](docs/aks-deployment.md) | Full AKS deployment with Traefik, TLS, Azure AD OAuth |
+| **AKS (Production - GitOps)** | [docs/cd-gitops-guide.md](docs/cd-gitops-guide.md) | **Primary Guide:** Full automated deployment using ArgoCD, Helm, Traefik, and Azure Key Vault |
+| **AKS (Legacy)** | [docs/aks-deployment.md](docs/aks-deployment.md) | Legacy manual `kubectl` pipeline guide |
 | **Docker Desktop (Local)** | [docs/kubernetes-deployment.md](docs/kubernetes-deployment.md) | Local K8s testing with port-forwarding |
-| **Developer Workflow** | [docs/developer-guide.md](docs/developer-guide.md) | End-to-end dev process: local → Docker → CI/CD → AKS |
+| **Developer Workflow** | [docs/developer-guide.md](docs/developer-guide.md) | End-to-end dev process: local → Docker → CI/CD → ArgoCD |
 
 ### Production URLs
 
@@ -776,6 +777,7 @@ The project deploys to **Azure Kubernetes Service (AKS)** with Traefik ingress, 
 |-----|---------|------|
 | `https://reondev.top` | Main app (FastAPI) | Microsoft Entra ID (MSAL.js) |
 | `https://grafana.reondev.top` | Grafana dashboards | Microsoft Entra ID (OAuth) |
+| `https://argocd.reondev.top` | ArgoCD Dashboard | Local ArgoCD Admin |
 | `localhost:9090` (port-forward) | Prometheus metrics | Internal only |
 | `localhost:8089` (port-forward) | Locust load testing | Internal only |
 
