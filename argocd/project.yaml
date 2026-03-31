@@ -16,6 +16,8 @@ spec:
   clusterResourceWhitelist:
     - group: cert-manager.io
       kind: ClusterIssuer
+    - group: ""
+      kind: Namespace
   # Namespace-scoped resources allowed
   namespaceResourceWhitelist:
     - group: ""
