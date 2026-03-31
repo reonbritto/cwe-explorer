@@ -12,7 +12,7 @@ app:
   name: cwe-explorer
   image:
     repository: reonbritto/puresecure-cve-explorer
-    tag: "fe37190" # CI will auto-update this with the git SHA
+    tag: "7ef785e" # CI will auto-update this with the git SHA
     pullPolicy: Always
   replicas: 1
   port: 8000
