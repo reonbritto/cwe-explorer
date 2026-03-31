@@ -9,3 +9,5 @@
 - **App:** CWE Explorer (Python/FastAPI)
 - **Identity:** Azure Entra ID (Workload Identity)
 - **Monitoring:** Grafana and Prometheus
+load testing - locust
+infra - aks, kv, trafeik, cert-manager, ecternal secrest, external dns
