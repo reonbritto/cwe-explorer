@@ -4,7 +4,7 @@ provider: azure
 
 env:
   - name: AZURE_CLIENT_ID
-    value: "d5880997-4a9a-4323-bd64-c71a27450058"
+    value: "b6929fbe-f331-4e4c-8b6a-3c6fd282b4d9"
 
 secretConfiguration:
   enabled: true
@@ -23,7 +23,7 @@ serviceAccount:
   name: external-dns-sa
   annotations:
     # This instructs Kubernetes to use Azure Workload Identity to fetch Azure tokens automatically
-    azure.workload.identity/client-id: "d5880997-4a9a-4323-bd64-c71a27450058"
+    azure.workload.identity/client-id: "b6929fbe-f331-4e4c-8b6a-3c6fd282b4d9"
 
 podLabels:
   azure.workload.identity/use: "true"
