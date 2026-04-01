@@ -1,149 +1,273 @@
+<div align="center">
+
 # PureSecure CVE Explorer
 
-**A real-time CVE vulnerability database with CWE mapping, analytics, observability, and Azure Entra ID authentication.**
+**A production-grade security intelligence platform for browsing, searching, and analysing CVE & CWE vulnerability data — with real-time observability, GitOps deployment, and Microsoft Entra ID authentication.**
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.135.1-009688)
-![NVD API](https://img.shields.io/badge/NVD%20API-2.0-orange)
-![Prometheus](https://img.shields.io/badge/Prometheus-v2.51.2-e6522c)
-![Grafana](https://img.shields.io/badge/Grafana-10.4.2-f46800)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ed)
-![License](https://img.shields.io/badge/License-MIT-green)
-[![Deployment Docs](https://img.shields.io/badge/Docs-Deployment_Architecture-purple)](DEPLOYMENT.md)
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/reonbritto/test-proj/ci-cd.yml?label=CI%2FCD&logo=github)](https://github.com/reonbritto/test-proj/actions)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Kubernetes](https://img.shields.io/badge/AKS-Kubernetes-326CE5?logo=kubernetes&logoColor=white)](https://azure.microsoft.com/en-us/products/kubernetes-service)
+[![Grafana](https://img.shields.io/badge/Grafana-10.4-F46800?logo=grafana&logoColor=white)](https://grafana.com)
+[![License](https://img.shields.io/badge/License-MIT-22c55e)](LICENSE)
+
+[**Live Demo**](https://reondev.top) · [**Grafana Dashboard**](https://grafana.reondev.top/d/cwe-explorer-api) · [**ArgoCD**](https://argocd.reondev.top)
+
+</div>
 
 ---
 
-## Overview
+## What is this?
 
-PureSecure CVE Explorer is a web-based security vulnerability database that queries the **NIST National Vulnerability Database (NVD) API 2.0** in real time. It provides a clean, searchable interface for browsing CVEs (Common Vulnerabilities and Exposures), mapping them to CWE (Common Weakness Enumeration) classifications, and visualizing severity analytics.
+PureSecure CVE Explorer queries the **NIST National Vulnerability Database (NVD) API 2.0** in real-time and provides a clean, searchable interface for security professionals to:
 
-The backend is built with **FastAPI** and serves a lightweight **vanilla JavaScript** frontend. An **SQLite caching layer** with a 24-hour TTL ensures fast responses while respecting NVD API rate limits. All API endpoints (except health and config) are protected by **Microsoft Entra ID (Azure AD) JWT authentication**. The full stack runs in **Docker Compose** with integrated **Prometheus** metrics, **Grafana** dashboards, and **Locust** load testing.
+- Browse and search **CVEs** (Common Vulnerabilities and Exposures) with CVSS severity scores
+- Explore **CWE** (Common Weakness Enumeration) definitions — 969+ weaknesses from the official MITRE XML dataset
+- Visualise vulnerability trends via a **Grafana** monitoring dashboard
+- Get email alerts when critical error rates or latency thresholds are breached via **Alertmanager**
 
-> 📚 **Deployment Architecture:** For a comprehensive, academic breakdown of the GitOps deployment methodologies, ArgoCD synchronization, Azure Key Vault integration, and container orchestration leveraged in this project, please see the formally-structured [Deployment Architecture Deep Dive (DEPLOYMENT.md)](DEPLOYMENT.md).
+The entire stack (API, monitoring, alerting, load testing) runs locally with a single `docker compose up`, and deploys to production on AKS via **ArgoCD GitOps**.
+
+---
+
+## Screenshots
+
+| Dashboard | CVE Detail | Grafana |
+|:---------:|:----------:|:-------:|
+| ![Dashboard](https://placehold.co/320x200/1e293b/94a3b8?text=CWE+Dashboard) | ![CVE Detail](https://placehold.co/320x200/1e293b/94a3b8?text=CVE+Detail) | ![Grafana](https://placehold.co/320x200/1e293b/94a3b8?text=Grafana+Panels) |
+
+---
+
+## Architecture
+
+### System Overview
+
+```mermaid
+graph TB
+    subgraph Internet["🌐 Internet"]
+        USER["👤 User Browser\nMSAL.js + Vanilla JS"]
+    end
+
+    subgraph AzureAD["☁️ Microsoft Entra ID"]
+        JWKS["JWKS Endpoint\n(RS256 signing keys)"]
+        OAUTH["OAuth 2.0\nAuthorization Server"]
+    end
+
+    subgraph NVD["🛡️ NIST NVD"]
+        NVDAPI["NVD API 2.0\nservices.nvd.nist.gov"]
+        MITRE["MITRE CWE XML\n969+ weaknesses"]
+    end
+
+    subgraph App["🐳 Docker Compose / AKS"]
+        direction TB
+
+        subgraph Backend["FastAPI Application :8000"]
+            MAIN["main.py\nRoutes & Middleware"]
+            AUTH["auth.py\nJWT Validation"]
+            NVD_C["nvd_client.py\nRate-limited HTTP"]
+            CWE_P["cwe_parser.py\nXML Parser"]
+            CACHE["cache.py\nSQLite TTL Cache"]
+            SEC["security.py\nInput Validation"]
+            METRICS_M["metrics.py\nPrometheus Middleware"]
+        end
+
+        subgraph Observability["📊 Observability Stack"]
+            PROM["Prometheus :9090\nMetrics & Alerting Rules"]
+            GRAF["Grafana :3000\n18-panel Dashboard"]
+            ALERT["Alertmanager :9093\nEmail Alerts via Gmail"]
+            LOCUST["Locust :8089\nLoad Testing"]
+        end
+
+        DB[("SQLite\ncache.db\n24h TTL")]
+    end
+
+    USER -- "HTTPS / Bearer JWT" --> MAIN
+    MAIN --> AUTH & NVD_C & CWE_P & SEC & METRICS_M
+    AUTH -- "Fetch JWKS (cached 1h)" --> JWKS
+    USER -- "OAuth 2.0 login" --> OAUTH
+    NVD_C -- "rate-limited (6s)" --> NVDAPI
+    CWE_P -- "startup download" --> MITRE
+    NVD_C & CWE_P --> CACHE --> DB
+    METRICS_M -- "/metrics scrape" --> PROM
+    PROM --> GRAF & ALERT
+    ALERT -- "Gmail SMTP" --> USER
+    LOCUST -- "load test HTTP" --> MAIN
+```
+
+### Production Deployment (AKS + GitOps)
+
+```mermaid
+graph LR
+    subgraph Dev["👨‍💻 Developer"]
+        CODE["git push\nmain branch"]
+    end
+
+    subgraph CI["⚙️ GitHub Actions"]
+        direction TB
+        LINT["1. Lint (Flake8)"]
+        SAST["2. SAST (CodeQL)"]
+        SCA["3. SCA (Snyk)"]
+        SECRET["4. Secrets (Gitleaks)"]
+        SBOM["5. SBOM (CycloneDX)"]
+        TEST["6. Tests (pytest)"]
+        BUILD["7. Docker Build"]
+        TRIVY["8. Trivy Scan"]
+        PUSH["9. DockerHub Push"]
+        GITOPS["10. GitOps Commit\n(update image tag in Helm values)"]
+
+        LINT --> SAST --> SCA --> SECRET --> SBOM --> TEST --> BUILD --> TRIVY --> PUSH --> GITOPS
+    end
+
+    subgraph GitOps["🔄 ArgoCD (AKS)"]
+        ARGO["ArgoCD\nWatches main branch"]
+        HELM["Helm Chart\npuresecure/"]
+    end
+
+    subgraph K8s["☸️ Azure Kubernetes Service"]
+        direction TB
+        TRAEFIK["Traefik Ingress\n+ Let's Encrypt TLS"]
+        APP_POD["App Pods"]
+        PROM_POD["Prometheus"]
+        GRAF_POD["Grafana + Alertmanager"]
+
+        subgraph Secrets["🔐 Secret Management"]
+            ESO["External Secrets Operator"]
+            KV["Azure Key Vault"]
+            MI["Workload Identity\n(Managed Identity)"]
+        end
+    end
+
+    CODE --> CI
+    GITOPS -- "commits values.yaml" --> ARGO
+    ARGO --> HELM --> TRAEFIK --> APP_POD
+    ESO --> KV --> MI
+    APP_POD --> ESO
+```
+
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant FE as Browser (MSAL.js)
+    participant API as FastAPI
+    participant AZ as Microsoft Entra ID
+
+    User->>FE: Open app
+    FE->>API: GET /api/config
+    API-->>FE: { client_id, tenant_id }
+    FE->>AZ: OAuth 2.0 login (openid + profile + email)
+    AZ-->>FE: JWT access token (RS256)
+    User->>FE: Search CVE / Browse CWE
+    FE->>API: GET /api/cwe?query=sql-injection<br/>Authorization: Bearer <token>
+    API->>AZ: Fetch JWKS keys (cached 1 hour)
+    AZ-->>API: RSA public keys
+    API->>API: Validate RS256 signature + audience
+    API-->>FE: JSON response
+    FE-->>User: Rendered page (XSS-safe escapeHTML)
+```
 
 ---
 
 ## Features
 
-- **Real-time CVE Search** -- Debounced autocomplete suggestions with keyword, CWE, and severity filters
-- **Detailed CVE Views** -- CVSS v2.0 and v3.1 scores with color-coded severity badges
-- **Rich CWE Detail Pages** -- Full MITRE CWE data including consequences, mitigations, detection methods, taxonomy mappings, applicable platforms, and abstraction levels
-- **Full CWE XML Dataset** -- Parses 969+ weakness definitions from the official MITRE CWE XML with auto-detected namespace versioning
-- **Curated Homepage** -- 30 featured CWEs covering OWASP Top 10, supply chain attacks, memory safety, and modern threat categories
-- **Severity Filtering** -- Filter by CRITICAL, HIGH, MEDIUM, or LOW
-- **Analytics Dashboard** -- Severity distribution, top CWEs, and risk scoring
-- **Azure Entra ID Authentication** -- JWT-based auth via MSAL.js and Microsoft JWKS
-- **Prometheus Metrics** -- Request count, latency histograms, error rates, and in-progress gauges
-- **Grafana Dashboards** -- Pre-provisioned dashboard with 18 panels across 5 sections
-- **Locust Load Testing** -- Pre-built scenarios covering all API endpoints
-- **Intelligent Caching** -- SQLite cache with 24-hour TTL and startup cleanup
-- **Kubernetes Native** -- Production AKS deployment with Traefik ingress, Let's Encrypt TLS, and Azure AD OAuth
-- **GitOps Deployment** -- Automated Continuous Deployment pipeline using ArgoCD and Helm
-- **Secure Secret Management** -- Azure Key Vault integration via Workload Identity and External Secrets Operator
-- **Request Logging** -- Structured logs with method, path, status, and duration
-- **CI/CD Security Pipeline** -- Lint, SAST, SCA, secrets scan, SBOM, Trivy container scan, and Docker push
-- **Dockerized** -- Single `docker compose up` deploys the full stack
-
----
-
-## System Architecture
-
-```mermaid
-graph LR
-    subgraph Frontend["Frontend (Vanilla JS + MSAL.js)"]
-        direction TB
-        A["index.html\nDashboard"]
-        B["search.html\nSearch & Filter"]
-        C["cve.html\nCVE Detail"]
-        D["cwe.html\nCWE Detail"]
-    end
-
-    subgraph Backend["Backend (FastAPI)"]
-        direction TB
-        E["main.py\nAPI Routes + Middleware"]
-        F["security.py\nInput Validation"]
-        G["nvd_client.py\nNVD API Client"]
-        H["cwe_parser.py\nCWE Data Provider"]
-        I["analytics.py\nData Aggregation"]
-        J["cache.py\nSQLite Cache Layer"]
-        AA["auth.py\nEntra ID JWT Auth"]
-        AB["metrics.py\nPrometheus Metrics"]
-    end
-
-    subgraph Observability["Observability Stack"]
-        P["Prometheus\nMetrics Collection"]
-        GR["Grafana\nDashboards"]
-        LO["Locust\nLoad Testing"]
-    end
-
-    subgraph External["External Services"]
-        K[("NVD API 2.0\nservices.nvd.nist.gov")]
-        AZ[("Microsoft Entra ID\nlogin.microsoftonline.com")]
-    end
-
-    subgraph Storage["Local Storage"]
-        L[("SQLite\ncache.db")]
-    end
-
-    A & B & C & D -- "Bearer Token\nHTTP / JSON" --> E
-    E --> F
-    E --> G
-    E --> H
-    E --> I
-    E --> AA
-    E --> AB
-    G --> J
-    H --> J
-    J --> L
-    G -- "Rate Limited\n~5 req / 30s" --> K
-    I --> J
-    AA -- "JWKS Validation" --> AZ
-    AB -- "/metrics" --> P
-    P --> GR
-    LO -- "HTTP Traffic" --> E
-
-    style A fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-    style B fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-    style C fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-    style D fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-    style E fill:#d1fae5,stroke:#10b981,color:#064e3b
-    style F fill:#d1fae5,stroke:#10b981,color:#064e3b
-    style G fill:#d1fae5,stroke:#10b981,color:#064e3b
-    style H fill:#d1fae5,stroke:#10b981,color:#064e3b
-    style I fill:#d1fae5,stroke:#10b981,color:#064e3b
-    style J fill:#d1fae5,stroke:#10b981,color:#064e3b
-    style AA fill:#fce7f3,stroke:#ec4899,color:#831843
-    style AB fill:#fce7f3,stroke:#ec4899,color:#831843
-    style P fill:#fff7ed,stroke:#f97316,color:#7c2d12
-    style GR fill:#fff7ed,stroke:#f97316,color:#7c2d12
-    style LO fill:#fff7ed,stroke:#f97316,color:#7c2d12
-    style K fill:#fed7aa,stroke:#f97316,color:#7c2d12
-    style AZ fill:#fed7aa,stroke:#f97316,color:#7c2d12
-    style L fill:#e9d5ff,stroke:#7c3aed,color:#3b0764
-```
+| Category | Feature |
+|----------|---------|
+| **CVE Search** | Real-time keyword search, CWE filter, severity filter, debounced autocomplete |
+| **CVE Detail** | CVSS v2 + v3 scores, severity badges, affected products (CPE), references |
+| **CWE Browsing** | 969+ MITRE definitions — consequences, mitigations, detection methods, taxonomy |
+| **Analytics** | Top CWEs by CVE count, composite risk scoring (frequency × severity) |
+| **Authentication** | Microsoft Entra ID (Azure AD) JWT — supports Work + Personal Microsoft accounts |
+| **Caching** | SQLite with 24h TTL, WAL mode for concurrent reads, startup cleanup |
+| **Monitoring** | Prometheus metrics, 17 recording rules, 11 alerting rules, Grafana dashboard (18 panels) |
+| **Alerting** | Alertmanager → Gmail SMTP → email for critical/warning severity alerts |
+| **Load Testing** | Locust scenarios covering all endpoints with weighted traffic distribution |
+| **Security** | Input validation, parameterised queries, defusedxml (XXE), non-root container, CORS |
+| **CI/CD** | 10-stage GitHub Actions: lint → SAST → SCA → secrets scan → SBOM → test → build → scan → push → GitOps |
+| **GitOps** | ArgoCD auto-sync from `main` branch, Helm chart, automatic TLS via Let's Encrypt |
+| **Secret Management** | Azure Key Vault + External Secrets Operator + Workload Identity (zero secret sprawl) |
+| **Infrastructure** | Terraform-managed AKS cluster, Key Vault, Managed Identities, External DNS |
 
 ---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| **Backend Framework** | FastAPI 0.135.1 |
-| **ASGI Server** | Uvicorn |
+| Layer | Technology |
+|-------|-----------|
 | **Language** | Python 3.10+ |
-| **Async HTTP Client** | httpx |
+| **API Framework** | FastAPI 0.135 + Uvicorn |
+| **HTTP Client** | httpx (async) |
 | **Data Validation** | Pydantic v2 |
-| **Database** | SQLite3 (caching, WAL mode) |
-| **Authentication** | Microsoft Entra ID (Azure AD) via PyJWT + JWKS |
-| **Metrics** | prometheus-client (Counter, Histogram, Gauge) |
+| **Cache** | SQLite3 (WAL mode) |
+| **Auth** | Microsoft Entra ID — PyJWT + JWKS |
+| **Metrics** | prometheus-client (Counter / Histogram / Gauge) |
 | **Monitoring** | Prometheus v2.51.2 + Grafana 10.4.2 |
+| **Alerting** | Alertmanager v0.27.0 + Gmail SMTP |
 | **Load Testing** | Locust 2.24.1 |
-| **XML Security** | defusedxml (XXE prevention) |
-| **Frontend** | Vanilla JavaScript, HTML5, CSS3, MSAL.js |
-| **Containerization** | Docker + Docker Compose + AKS + Helm |
-| **Testing** | pytest, respx (HTTP mocking) |
-| **Security Scanning** | bandit, flake8 |
-| **Infrastructure** | Terraform, ArgoCD GitOps |
+| **Frontend** | Vanilla JS, HTML5, CSS3, MSAL.js |
+| **Security** | defusedxml, bandit, Gitleaks, Snyk, CodeQL, Trivy |
+| **Containers** | Docker + Docker Compose |
+| **Orchestration** | Azure Kubernetes Service (AKS) |
+| **Package Manager** | Helm 3 |
+| **GitOps** | ArgoCD |
+| **Infrastructure** | Terraform + Azure (AKS, Key Vault, DNS) |
+| **CI/CD** | GitHub Actions |
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose)
+- An [Azure App Registration](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps) (free) — for Microsoft login
+
+### 1. Clone & Configure
+
+```bash
+git clone https://github.com/reonbritto/test-proj.git
+cd test-proj
+
+cp .env.example .env
+```
+
+Edit `.env` with your Azure credentials:
+
+```env
+AZURE_TENANT_ID=your-tenant-id
+AZURE_CLIENT_ID=your-client-id
+
+GF_ADMIN_USER=admin
+GF_ADMIN_PASSWORD=changeme
+
+# Grafana Azure AD OAuth (for Grafana login)
+GF_AUTH_AZUREAD_CLIENT_SECRET=your-client-secret
+GF_AUTH_AZUREAD_ENABLED=true
+
+# Alertmanager email relay (Gmail App Password)
+ALERTMANAGER_SMTP_USERNAME=you@gmail.com
+ALERTMANAGER_SMTP_PASSWORD=xxxx xxxx xxxx xxxx
+```
+
+### 2. Start the Full Stack
+
+```bash
+docker compose up --build
+```
+
+All services start automatically. The first run downloads the MITRE CWE XML dataset.
+
+### 3. Open the App
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| **CWE Explorer** | http://localhost:8000 | Sign in with Microsoft |
+| **Swagger / OpenAPI** | http://localhost:8000/docs | Interactive API docs |
+| **Grafana** | http://localhost:3000 | Sign in with Microsoft or admin/admin |
+| **Prometheus** | http://localhost:9090 | No auth |
+| **Alertmanager** | http://localhost:9093 | No auth |
+| **Locust** | http://localhost:8089 | No auth |
 
 ---
 
@@ -151,241 +275,114 @@ graph LR
 
 ```
 cve-new-bri/
-├── app/                                # Application source code
-│   ├── __init__.py
-│   ├── main.py                         # FastAPI app, routes, middleware, lifespan
-│   ├── models.py                       # Pydantic models (CVEDetail, CWEEntry, etc.)
-│   ├── auth.py                         # Microsoft Entra ID JWT validation (JWKS)
-│   ├── metrics.py                      # Prometheus middleware (count, latency, gauge)
-│   ├── nvd_client.py                   # NVD API 2.0 client with rate limiting
-│   ├── cwe_parser.py                   # Full MITRE CWE XML parser (969+ weaknesses)
-│   ├── cache.py                        # SQLite cache (WAL mode, 24h TTL, cleanup)
-│   ├── analytics.py                    # Top CWEs, risk scoring
-│   ├── security.py                     # Input validation (CVE/CWE regex, sanitization)
-│   └── static/                         # Frontend web assets
-│       ├── index.html                  # Dashboard homepage
-│       ├── search.html                 # Search with filters and pagination
-│       ├── cve.html                    # CVE detail view (CVSS, CWEs, products)
-│       ├── cwe.html                    # CWE detail view (consequences, mitigations, detections)
-│       ├── login.html                  # Microsoft Entra ID login page
-│       ├── 404.html                    # Custom 404 error page
-│       ├── style.css                   # Design system with CSS variables
-│       ├── common.js                   # Shared utilities (XSS prevention, fetch)
-│       ├── auth.js                     # MSAL.js authentication logic
-│       ├── dashboard.js                # Homepage logic
-│       ├── search.js                   # Search with debounced suggestions
-│       ├── cve.js                      # CVE detail rendering
-│       └── cwe.js                      # CWE detail rendering
-├── terraform/                          # Infrastructure as Code (Azure AKS, Key Vault)
-│   ├── main.tf                         # Core resource definitions
-│   ├── variables.tf                    # Input variables
-│   ├── outputs.tf                      # Output references for Helm
-│   ├── providers.tf                    # AzureRM provider config
-│   └── terraform.tfvars.example        # Example values
-├── tests/                              # Test suite
-│   ├── test_main.py                    # API endpoint integration tests
-│   ├── test_auth.py                    # Authentication / JWT validation tests
-│   ├── test_cwe_parser.py              # CWE data provider tests
-│   ├── test_nvd_client.py              # NVD response parser tests
-│   └── test_security.py               # Input validation tests
-├── data/                               # Auto-created: SQLite cache database
-├── helm/puresecure/                    # Primary Application Helm Chart
-│   ├── Chart.yaml                      # Chart metadata
-│   ├── values.yaml                     # Application config (image tag synced by GitHub Actions)
-│   └── templates/                      # K8s resources, Traefik routes, ExternalSecrets
-├── argocd/                             # GitOps Configuration
-│   ├── application.yaml                # ArgoCD App syncing from GitHub `main`
-│   ├── project.yaml                    # ArgoCD secure project configuration
-│   └── ingressroute.yaml               # Traefik routing rules for ArgoCD web interface
-├── docs/
-│   ├── REPORT.md                       # Security design report
-│   ├── terraform-guide.md              # Infrastructure provisioning guide
-│   ├── cd-gitops-guide.md              # ArgoCD + Helm + Key Vault GitOps Guide (Latest)
-│   ├── aks-deployment.md               # Legacy manual AKS guide
-│   ├── kubernetes-deployment.md        # Local K8s guide (Docker Desktop)
-│   └── developer-guide.md              # Developer onboarding & workflow
-├── .env.example                        # Environment variable template
-├── Dockerfile                          # Multi-stage Python 3.12-slim image
-├── docker-compose.yml                  # Full stack: web, prometheus, grafana, locust
-├── requirements.txt                    # Python dependencies
-├── requirements-dev.txt                # Dev dependencies (pytest, bandit, flake8)
-├── pyproject.toml                      # Project metadata, tool config
-├── .gitignore
-└── .dockerignore
+├── app/                          # Backend source
+│   ├── main.py                   # FastAPI app, routes, lifespan, middleware
+│   ├── auth.py                   # Entra ID JWT validation (JWKS, RS256)
+│   ├── metrics.py                # Prometheus middleware (counter/histogram/gauge)
+│   ├── nvd_client.py             # NVD API 2.0 client (async, rate-limited)
+│   ├── cwe_parser.py             # MITRE CWE XML parser (969+ weaknesses)
+│   ├── cache.py                  # SQLite cache (WAL mode, 24h TTL)
+│   ├── analytics.py              # Risk scoring, top-CWE aggregation
+│   ├── security.py               # Input validation (CVE/CWE regex, sanitization)
+│   ├── models.py                 # Pydantic models (CVEDetail, CWEEntry, etc.)
+│   └── static/                   # Frontend (Vanilla JS + MSAL.js)
+│       ├── index.html            # Dashboard — curated CWEs, analytics
+│       ├── search.html           # CVE / CWE search with filters
+│       ├── cve.html              # CVE detail — CVSS, products, references
+│       ├── cwe.html              # CWE detail — consequences, mitigations
+│       ├── auth.js               # MSAL.js auth logic
+│       ├── common.js             # Shared utilities, XSS-safe rendering
+│       └── style.css             # Design system (CSS variables, dark mode)
+│
+├── monitoring/
+│   ├── prometheus/
+│   │   ├── prometheus.yml        # Scrape config + Alertmanager target
+│   │   └── rules/
+│   │       ├── recording_rules.yml   # 17 pre-computed PromQL queries
+│   │       └── alerting_rules.yml    # 11 alert rules (critical + warning)
+│   ├── alertmanager/
+│   │   ├── alertmanager.yml      # Routing tree, Gmail SMTP, inhibition rules
+│   │   └── templates/
+│   │       └── puresecure.tmpl   # HTML email template with severity colours
+│   └── grafana/
+│       ├── provisioning/         # Auto-provisioned datasource + dashboard
+│       └── dashboards/
+│           └── cwe-explorer.json # 18-panel API monitoring dashboard
+│
+├── helm/puresecure/              # Production Helm chart
+│   ├── Chart.yaml
+│   ├── values.yaml               # All config — image tag updated by CI/CD
+│   └── templates/                # K8s Deployments, Services, Ingress, Secrets
+│       ├── app/
+│       ├── prometheus/
+│       ├── grafana/
+│       ├── alertmanager/
+│       └── secrets/              # ExternalSecret → Azure Key Vault
+│
+├── argocd/
+│   ├── application.yaml          # ArgoCD App syncing helm/puresecure from main
+│   └── project.yaml              # ArgoCD project with RBAC
+│
+├── terraform/                    # Infrastructure as Code
+│   ├── main.tf                   # AKS cluster, Key Vault, Managed Identities
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── terraform.tfvars.example
+│
+├── tests/                        # pytest test suite
+│   ├── test_main.py
+│   ├── test_auth.py
+│   ├── test_cwe_parser.py
+│   ├── test_nvd_client.py
+│   └── test_security.py
+│
+├── locust/locustfile.py          # Load test scenarios (7 weighted tasks)
+├── Dockerfile                    # Multi-stage, non-root, Python 3.12-slim
+├── docker-compose.yml            # Local full stack
+└── .github/workflows/ci-cd.yml  # 10-stage CI/CD pipeline
 ```
-
----
-
-## Installation & Usage
-
-### Option 1: Docker Compose (Recommended)
-
-This deploys the full stack: API, Prometheus, Grafana, and Locust.
-
-```bash
-# 1. Clone the repository
-git clone <repository-url>
-cd cve-new-bri
-
-# 2. Create a .env file with your Azure Entra ID credentials
-echo "AZURE_TENANT_ID=your-tenant-id" > .env
-echo "AZURE_CLIENT_ID=your-client-id" >> .env
-
-# 3. Build and start all services
-docker compose up --build
-```
-
-#### Service URLs
-
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| **CWE Explorer API** | <http://localhost:8000> | Azure Entra ID token |
-| **API Docs (Swagger)** | <http://localhost:8000/docs> | — |
-| **Prometheus** | <http://localhost:9090> | — |
-| **Grafana** | <http://localhost:3000> | See `.env` (`GF_ADMIN_USER` / `GF_ADMIN_PASSWORD`) |
-| **Locust** | <http://localhost:8089> | — |
-
-### Option 2: Local Development
-
-```bash
-# 1. Clone and enter the project
-git clone <repository-url>
-cd cve-new-bri
-
-# 2. Create and activate a virtual environment
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# macOS / Linux
-source venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Set environment variables
-set AZURE_TENANT_ID=your-tenant-id
-set AZURE_CLIENT_ID=your-client-id
-
-# 5. Start the server
-uvicorn app.main:app --reload
-
-# 6. Open in browser: http://localhost:8000
-```
-
-### Run Tests
-
-```bash
-# Install dev dependencies
-pip install -r requirements-dev.txt
-
-# Run all tests
-pytest
-
-# Verbose with short tracebacks
-pytest -v --tb=short
-
-# Security scan
-bandit -r app/
-
-# Lint check
-flake8 app/
-```
-
----
-
-## Authentication
-
-All API endpoints except `/api/health`, `/api/config`, and `/metrics` require a valid **Microsoft Entra ID (Azure AD) Bearer token**.
-
-### How It Works
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant FE as Frontend<br/>(MSAL.js)
-    participant API as FastAPI<br/>(auth.py)
-    participant AZ as Microsoft Entra ID
-
-    User->>FE: Open app
-    FE->>API: GET /api/config
-    API-->>FE: {client_id, tenant_id}
-    FE->>AZ: MSAL.js login (OAuth 2.0)
-    AZ-->>FE: JWT access token
-    User->>FE: Search for CVE
-    FE->>API: GET /api/cwe?query=injection<br/>Authorization: Bearer <token>
-    API->>AZ: Fetch JWKS (cached 1h)
-    AZ-->>API: Signing keys
-    API->>API: Validate JWT (RS256, audience check)
-    API-->>FE: JSON response
-    FE-->>User: Rendered results
-```
-
-### Configuration
-
-| Environment Variable | Description |
-|---------------------|-------------|
-| `AZURE_TENANT_ID` | Your Azure AD tenant ID |
-| `AZURE_CLIENT_ID` | App registration client ID (used as JWT `audience`) |
-
-The auth module (`app/auth.py`) uses the Microsoft common JWKS endpoint with issuer validation disabled to support multi-tenant and personal Microsoft accounts.
 
 ---
 
 ## API Reference
 
-### Public Endpoints (No Auth)
+### Public Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/health` | Health check with cache stats |
-| `GET` | `/api/config` | Entra ID client config for MSAL.js |
-| `GET` | `/metrics` | Prometheus metrics (text format) |
+| `GET` | `/api/health` | Health check — cache stats, CWE count |
+| `GET` | `/api/config` | Entra ID config for MSAL.js |
+| `GET` | `/metrics` | Prometheus metrics (text/plain) |
 
-### CWE Endpoints (Auth Required)
+### Protected Endpoints (Bearer token required)
 
-| Method | Endpoint | Description | Parameters |
-|--------|----------|-------------|------------|
-| `GET` | `/api/cwe` | List or search CWEs | `query`, `limit` (default: 10, max: 100) |
-| `GET` | `/api/cwe/featured` | Curated well-known and trending CWEs | -- |
-| `GET` | `/api/cwe/suggestions` | Autocomplete suggestions | `q` (required, min 1 char) |
-| `GET` | `/api/cwe/{cwe_id}` | Single CWE detail | Path: numeric ID (e.g., `79`) |
-| `GET` | `/api/cwe/{cwe_id}/cves` | CVEs for a specific CWE | Path: numeric ID |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/cwe` | List / search CWEs — `?query=&limit=` |
+| `GET` | `/api/cwe/featured` | Curated 30 CWEs (OWASP Top 10 + more) |
+| `GET` | `/api/cwe/suggestions` | Autocomplete — `?q=` |
+| `GET` | `/api/cwe/{id}` | Full CWE detail |
+| `GET` | `/api/cwe/{id}/cves` | CVEs mapped to a CWE |
+| `GET` | `/api/cve/{cve_id}` | Full CVE detail — `CVE-2021-44228` |
+| `GET` | `/api/analytics/top-cwes` | Top CWEs by CVE count |
+| `GET` | `/api/analytics/cwe-risk` | Risk-scored CWEs (frequency × severity) |
 
-### CVE Endpoints (Auth Required)
-
-| Method | Endpoint | Description | Parameters |
-|--------|----------|-------------|------------|
-| `GET` | `/api/cve/{cve_id}` | Full CVE details | Path: CVE ID (e.g., `CVE-2021-44228`) |
-
-### Analytics Endpoints (Auth Required)
-
-| Method | Endpoint | Description | Parameters |
-|--------|----------|-------------|------------|
-| `GET` | `/api/analytics/top-cwes` | CWEs with most associated CVEs | `limit` (default: 10, max: 50) |
-| `GET` | `/api/analytics/cwe-risk` | CWE risk scores (frequency × severity) | `limit` (default: 15, max: 50) |
-
-### Example Requests
+### Example
 
 ```bash
-# Health check (no auth)
+# No auth — health check
 curl http://localhost:8000/api/health
 
-# Prometheus metrics (no auth)
-curl http://localhost:8000/metrics
+# With Bearer token
+TOKEN="eyJ..."
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/cwe?query=injection&limit=5"
 
-# Search CWEs (requires Bearer token)
-curl -H "Authorization: Bearer <token>" \
-  http://localhost:8000/api/cwe?query=injection
-
-# Get CVE detail (requires Bearer token)
-curl -H "Authorization: Bearer <token>" \
-  http://localhost:8000/api/cve/CVE-2021-44228
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/cve/CVE-2021-44228"
 ```
 
-### Example Response -- Health Check
-
+**Health response:**
 ```json
 {
   "status": "healthy",
@@ -404,387 +401,203 @@ curl -H "Authorization: Bearer <token>" \
 
 ### Prometheus Metrics
 
-The FastAPI app exposes a `/metrics` endpoint with the following metrics:
+| Metric | Type | Labels |
+|--------|------|--------|
+| `http_requests_total` | Counter | `method`, `endpoint`, `status_code` |
+| `http_request_duration_seconds` | Histogram | `method`, `endpoint` |
+| `http_requests_in_progress` | Gauge | `method`, `endpoint` |
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `http_requests_total` | Counter | Total requests by method, endpoint, status |
-| `http_request_duration_seconds` | Histogram | Request latency with percentile-friendly buckets |
-| `http_requests_in_progress` | Gauge | Currently active requests |
+Path normalisation prevents label cardinality explosion — `/api/cwe/79` → `/api/cwe/{id}`.
 
-Path normalization prevents high-cardinality label explosion (e.g., `/api/cwe/79` → `/api/cwe/{id}`).
-
-### Recording Rules (Pre-computed Queries)
-
-17 recording rules in `monitoring/prometheus/rules/recording_rules.yml`:
-
-| Query | What It Computes |
-|-------|------------------|
-| `cwe:http_requests:rate1m` | Total requests/sec |
-| `cwe:http_requests_by_endpoint:rate1m` | Requests/sec per endpoint |
-| `cwe:http_errors_5xx:rate1m` | Server error rate |
-| `cwe:http_error_ratio_5xx` | % of requests returning 5xx |
-| `cwe:http_latency_p50:5m` | Median response time |
-| `cwe:http_latency_p95:5m` | 95th percentile latency |
-| `cwe:http_latency_p99:5m` | 99th percentile latency |
-| `cwe:http_availability:5m` | Availability % (1 − error ratio) |
-| `cwe:http_in_progress:total` | Current concurrent requests |
-
-### Alerting Rules
-
-11 alerting rules in `monitoring/prometheus/rules/alerting_rules.yml`:
+### Alert Rules
 
 | Alert | Condition | Severity |
 |-------|-----------|----------|
-| **APIDown** | `/metrics` unreachable 2 min | Critical |
-| **HighServerErrorRate** | > 5% of requests are 5xx | Critical |
-| **LowAvailability** | Availability < 99% | Critical |
-| **TrafficSpike** | 10× normal request rate | Critical |
-| **CriticalP95Latency** | p95 > 5 seconds | Critical |
-| **HighClientErrorRate** | > 25% requests are 4xx | Warning |
-| **HighP95Latency** | p95 > 1 second | Warning |
-| **HighP99Latency** | p99 > 3 seconds | Warning |
-| **SlowEndpoint** | Any endpoint p95 > 2s | Warning |
-| **NoTraffic** | Zero requests 10 min | Warning |
-| **HighConcurrency** | > 50 in-progress requests | Warning |
+| **APIDown** | `/metrics` unreachable for 2 min | 🔴 Critical |
+| **HighServerErrorRate** | > 5% of requests are 5xx | 🔴 Critical |
+| **LowAvailability** | Availability < 99% | 🔴 Critical |
+| **TrafficSpike** | 10× normal request rate | 🔴 Critical |
+| **CriticalP95Latency** | p95 > 5 seconds | 🔴 Critical |
+| **HighClientErrorRate** | > 25% requests are 4xx | 🟡 Warning |
+| **HighP95Latency** | p95 > 1 second | 🟡 Warning |
+| **HighP99Latency** | p99 > 3 seconds | 🟡 Warning |
+| **SlowEndpoint** | Any endpoint p95 > 2s | 🟡 Warning |
+| **NoTraffic** | Zero requests for 10 min | 🟡 Warning |
+| **HighConcurrency** | > 50 in-progress requests | 🟡 Warning |
+
+Critical alerts are inhibited when `APIDown` fires (no spam). Email delivered via Gmail SMTP to your configured address.
 
 ### Grafana Dashboard
 
-The pre-provisioned dashboard ("CWE Explorer -- API Monitoring") has 18 panels in 5 sections:
+The pre-provisioned **CWE Explorer — API Monitoring** dashboard has 18 panels across 5 sections:
 
-1. **📊 Overview** -- Total, 2xx, 4xx, 5xx request counts (stat panels)
-2. **🚦 Traffic** -- Requests/sec, cumulative traffic, pie charts by endpoint/method/status
-3. **⏱️ Latency** -- p50/p95/p99 percentiles, per-endpoint p95, avg bar gauge, heatmap
-4. **🔴 Errors & Connections** -- 5xx error rate, in-progress requests
-5. **📋 Request Log** -- Full table of all requests with method, endpoint, status, count, rate, and avg response time
-
-### Locust Load Testing
-
-The `locust/locustfile.py` defines weighted scenarios:
-
-| Scenario | Weight | Endpoint |
-|----------|--------|----------|
-| List CWEs | 5 | `GET /api/cwe` |
-| Search CWEs | 4 | `GET /api/cwe?query=...` |
-| CWE Detail | 3 | `GET /api/cwe/{id}` |
-| Suggestions | 3 | `GET /api/cwe/suggestions` |
-| CWE CVEs | 2 | `GET /api/cwe/{id}/cves` |
-| Top CWEs | 2 | `GET /api/analytics/top-cwes` |
-| Risk Scores | 1 | `GET /api/analytics/cwe-risk` |
-| Health Check | 1 | `GET /` |
-
-Access the Locust UI at <http://localhost:8089> to configure users and spawn rate.
-
----
-
-## Docker Architecture
-
-```mermaid
-graph TD
-    subgraph Docker Compose
-        WEB["web\nFastAPI App\n:8000"]
-        PROM["prometheus\nprom/prometheus:v2.51.2\n:9090"]
-        GRAF["grafana\ngrafana/grafana:10.4.2\n:3000"]
-        LOC["locust\nlocustio/locust:2.24.1\n:8089"]
-    end
-
-    PROM -- "scrape /metrics\nevery 15s" --> WEB
-    GRAF -- "query" --> PROM
-    LOC -- "load test\nHTTP traffic" --> WEB
-
-    WEB -.- V1[("cwe-data\n/app/data")]
-    PROM -.- V2[("prometheus-data\n/prometheus")]
-    GRAF -.- V3[("grafana-data\n/var/lib/grafana")]
-
-    style WEB fill:#d1fae5,stroke:#10b981,color:#064e3b
-    style PROM fill:#fff7ed,stroke:#f97316,color:#7c2d12
-    style GRAF fill:#fff7ed,stroke:#f97316,color:#7c2d12
-    style LOC fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-    style V1 fill:#e9d5ff,stroke:#7c3aed,color:#3b0764
-    style V2 fill:#e9d5ff,stroke:#7c3aed,color:#3b0764
-    style V3 fill:#e9d5ff,stroke:#7c3aed,color:#3b0764
-```
-
----
-
-## Backend Module Dependencies
-
-```mermaid
-graph TD
-    MAIN["main.py\nFastAPI App & Routes"]
-    MODELS["models.py\nPydantic Models"]
-    NVD["nvd_client.py\nNVD API Client"]
-    CWE["cwe_parser.py\nCWE Data Provider"]
-    SEC["security.py\nInput Validation"]
-    CACHE["cache.py\nSQLite Cache"]
-    ANALYTICS["analytics.py\nData Aggregation"]
-    AUTH["auth.py\nEntra ID JWT"]
-    METRICS["metrics.py\nPrometheus"]
-    DB[("SQLite DB\ncache.db")]
-    EXT[("NVD API 2.0")]
-    AZ[("Microsoft\nEntra ID")]
-
-    MAIN --> MODELS
-    MAIN --> NVD
-    MAIN --> CWE
-    MAIN --> SEC
-    MAIN --> CACHE
-    MAIN --> ANALYTICS
-    MAIN --> AUTH
-    MAIN --> METRICS
-
-    NVD --> MODELS
-    NVD --> CACHE
-    CWE --> MODELS
-    CWE --> CACHE
-    ANALYTICS --> MODELS
-
-    CACHE --> DB
-    NVD --> EXT
-    CWE --> EXT
-    AUTH --> AZ
-
-    style MAIN fill:#d1fae5,stroke:#10b981,color:#064e3b
-    style MODELS fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-    style NVD fill:#fef3c7,stroke:#f59e0b,color:#78350f
-    style CWE fill:#fef3c7,stroke:#f59e0b,color:#78350f
-    style SEC fill:#fce7f3,stroke:#ec4899,color:#831843
-    style CACHE fill:#e9d5ff,stroke:#7c3aed,color:#3b0764
-    style ANALYTICS fill:#ccfbf1,stroke:#14b8a6,color:#134e4a
-    style AUTH fill:#fce7f3,stroke:#ec4899,color:#831843
-    style METRICS fill:#fce7f3,stroke:#ec4899,color:#831843
-    style DB fill:#f3f4f6,stroke:#6b7280,color:#1f2937
-    style EXT fill:#fed7aa,stroke:#f97316,color:#7c2d12
-    style AZ fill:#fed7aa,stroke:#f97316,color:#7c2d12
-```
+| Section | Panels |
+|---------|--------|
+| 📊 **Overview** | Total requests, 2xx, 4xx, 5xx stat counters |
+| 🚦 **Traffic** | Requests/sec, cumulative traffic, breakdown by endpoint / method / status |
+| ⏱️ **Latency** | p50 / p95 / p99 time series, per-endpoint p95, heatmap |
+| 🔴 **Errors & Connections** | 5xx error rate, in-progress requests gauge |
+| 📋 **Request Log** | Full table — method, endpoint, status, count, rate, avg response time |
 
 ---
 
 ## Security
 
-### Security Layers
-
-| Layer | Protection | Implementation |
-|-------|-----------|----------------|
-| **Authentication** | Microsoft Entra ID JWT (RS256, audience validation) | `auth.py` -- JWKS cached 1h, multi-tenant support |
-| **CORS** | Origin allowlist, restricted methods/headers | `main.py` -- only localhost:8000 origins, GET only |
-| **CVE ID Validation** | Strict regex `^CVE-\d{4}-\d{4,}$` | `security.py` -- rejects malformed IDs |
-| **CWE ID Validation** | Numeric-only regex `^\d+$` | `security.py` -- prevents injection |
-| **Query Sanitization** | 200 char limit, allowlist `[\w\s\-.,]` | `security.py` -- sanitizes all search input |
-| **SQL Injection Prevention** | Parameterized queries with `?` placeholders | `cache.py` -- all database operations |
-| **XXE Prevention** | `defusedxml` instead of stdlib XML | `cwe_parser.py` -- blocks entity injection |
-| **XSS Prevention** | `escapeHTML()` via `textContent` | `common.js` -- all frontend rendering |
-| **Non-root Container** | `appuser:appgroup` in Docker | `Dockerfile` -- least privilege |
-| **Rate Limiting** | 6-second min interval for NVD requests | `nvd_client.py` -- async sleep-based |
-
-### Request / Response Data Flow
-
 ```mermaid
-sequenceDiagram
-    actor User
-    participant FE as Frontend<br/>(MSAL.js)
-    participant API as FastAPI<br/>(main.py)
-    participant AUTH as Auth<br/>(auth.py)
-    participant SEC as Security<br/>(security.py)
-    participant NVD as NVD Client<br/>(nvd_client.py)
-    participant CACHE as Cache<br/>(cache.py)
-    participant DB as SQLite<br/>(cache.db)
-    participant EXT as NVD API 2.0
+graph LR
+    REQ["Incoming\nRequest"] --> CORS["CORS\nAllowlist"]
+    CORS --> JWT["JWT Validation\nRS256 + JWKS\nAudience check"]
+    JWT --> INPUT["Input Validation\nCVE regex · CWE regex\n200-char limit · allowlist"]
+    INPUT --> CACHE["Cache Layer\nParameterised SQL\n(no injection)"]
+    CACHE --> NVD["NVD API\nRate limited\n6s interval"]
 
-    User->>FE: Enter CVE ID
-    FE->>API: GET /api/cve/CVE-2021-44228<br/>Authorization: Bearer <token>
-    API->>AUTH: Validate JWT (RS256 + JWKS)
-    AUTH-->>API: Claims payload
-
-    API->>SEC: validate_cve_id()
-    SEC-->>API: Validated ID
-
-    API->>NVD: get_cve(cve_id)
-    NVD->>CACHE: get_cached_cve(cve_id)
-    CACHE->>DB: SELECT FROM cve_cache
-
-    alt Cache Hit (within 24h TTL)
-        DB-->>CACHE: Cached JSON
-        CACHE-->>NVD: CVE data dict
-        NVD-->>API: CVEDetail model
-    else Cache Miss or Expired
-        DB-->>CACHE: None
-        CACHE-->>NVD: None
-        NVD->>EXT: GET /rest/json/cves/2.0?cveId=...
-        Note over NVD,EXT: Rate limited: 6s min interval
-        EXT-->>NVD: NVD JSON response
-        NVD->>NVD: parse_nvd_cve()
-        NVD->>CACHE: set_cached_cve()
-        CACHE->>DB: INSERT OR REPLACE
-        NVD-->>API: CVEDetail model
-    end
-
-    API-->>FE: JSON response
-    FE->>FE: Render with escapeHTML()
-    FE-->>User: CVE detail page
+    style REQ fill:#1e293b,stroke:#475569,color:#e2e8f0
+    style CORS fill:#7c3aed,stroke:#6d28d9,color:#fff
+    style JWT fill:#dc2626,stroke:#b91c1c,color:#fff
+    style INPUT fill:#d97706,stroke:#b45309,color:#fff
+    style CACHE fill:#0891b2,stroke:#0e7490,color:#fff
+    style NVD fill:#16a34a,stroke:#15803d,color:#fff
 ```
 
----
-
-## Database / Cache Schema
-
-```mermaid
-erDiagram
-    cve_cache {
-        TEXT cve_id PK "e.g. CVE-2021-44228"
-        TEXT response_json "Full CVEDetail as JSON"
-        TEXT fetched_at "ISO 8601 timestamp"
-    }
-
-    search_cache {
-        TEXT query_hash PK "SHA-256 of query params"
-        TEXT response_json "Search results as JSON"
-        TEXT fetched_at "ISO 8601 timestamp"
-    }
-```
-
-**Cache behavior:**
-
-- Both tables use `INSERT OR REPLACE` for upserts
-- TTL is **24 hours**, checked at read time via `_is_expired()`
-- Expired entries are cleaned up at startup via `cleanup_expired()`
-- WAL journal mode enables concurrent reads without blocking writes
-- `query_hash` is a SHA-256 hex digest of the serialized query parameters
-- The database file is auto-created at `data/cache.db`
-
----
-
-## Data Models
-
-All data models are defined in `app/models.py` using Pydantic v2.
-
-| Model | Fields | Purpose |
-|-------|--------|---------|
-| **CWEEntry** | `id`, `name`, `description`, `abstraction`, `status`, `extended_description`, `common_consequences`, `potential_mitigations`, `detection_methods`, `affected_resources`, `taxonomy_mappings`, `applicable_platforms`, `related_weaknesses` | Full CWE weakness definition |
-| **Consequence** | `scope`, `impact`, `likelihood` | CWE consequence (e.g., Confidentiality / Read Memory / High) |
-| **Mitigation** | `phase`, `description`, `effectiveness` | CWE mitigation strategy |
-| **DetectionMethod** | `method`, `description`, `effectiveness` | How to detect the weakness |
-| **CVSSScores** | `v2_score`, `v2_vector`, `v3_score`, `v3_vector`, `v3_severity` | CVSS v2/v3 scoring data |
-| **AffectedProduct** | `vendor`, `product`, `version` | Vulnerable software from CPE |
-| **Reference** | `url`, `source`, `tags` | External advisory links |
-| **CVEDetail** | `cve_id`, `description`, `cvss`, `cwe_ids`, `references`, `affected_products`, `published`, `modified` | Full vulnerability record |
-| **CVESearchResult** | `cve_id`, `description`, `severity`, `cvss_v3`, `published` | Lightweight search result |
-| **CWEStats** | `cwe_id`, `cwe_name`, `cve_count` | CWE popularity ranking |
-| **CWERiskScore** | `cwe_id`, `cwe_name`, `risk_score`, ... | Composite risk ranking |
-
----
-
-## Configuration
-
-| Variable / Constant | Value | Location | Description |
-|---------------------|-------|----------|-------------|
-| `AZURE_TENANT_ID` | (env var) | `docker-compose.yml` | Azure AD tenant ID |
-| `AZURE_CLIENT_ID` | (env var) | `docker-compose.yml` | App registration client ID |
-| `TTL_HOURS` | `24` | `app/cache.py` | Cache expiration time |
-| `DB_PATH` | `data/cache.db` | `app/cache.py` | SQLite database location |
-| `NVD_BASE_URL` | `services.nvd.nist.gov/...` | `app/nvd_client.py` | NVD API endpoint |
-| `REQUEST_TIMEOUT` | `30.0` | `app/nvd_client.py` | HTTP timeout (seconds) |
-| `_MIN_INTERVAL` | `6.0` | `app/nvd_client.py` | Rate limit interval |
-| `MAX_QUERY_LENGTH` | `200` | `app/security.py` | Max search query length |
-| `_JWKS_TTL` | `1 hour` | `app/auth.py` | JWKS key cache duration |
-
----
-
-## Testing
-
-### Test Modules
-
-| Module | Description |
-|--------|-------------|
-| `test_main.py` | API endpoint integration tests using `TestClient` and mocked NVD calls |
-| `test_auth.py` | Authentication and JWT validation tests (token rejection, public endpoints) |
-| `test_cwe_parser.py` | CWE data provider tests (XML parsing + fallback) |
-| `test_nvd_client.py` | NVD response parser tests (CVSS v2/v3, CWE IDs, CPE products, dates) |
-| `test_security.py` | Input validation tests including SQL injection and XSS payload rejection |
+| Layer | Implementation |
+|-------|---------------|
+| **Authentication** | RS256 JWT — JWKS cached 1h, multi-tenant + personal Microsoft accounts |
+| **CORS** | Restricted to app origin, GET-only |
+| **CVE ID validation** | Strict regex `^CVE-\d{4}-\d{4,}$` |
+| **CWE ID validation** | Numeric-only `^\d+$` |
+| **Query sanitisation** | 200-char max, allowlist `[\w\s\-.,]` |
+| **SQL injection** | Parameterised queries everywhere in `cache.py` |
+| **XXE prevention** | `defusedxml` for all XML parsing |
+| **XSS prevention** | `escapeHTML()` / `textContent` in all frontend rendering |
+| **Non-root container** | `appuser:appgroup` in Dockerfile |
+| **NVD rate limit** | 6-second minimum interval between external API calls |
+| **Secret management** | Azure Key Vault + Workload Identity — no secrets in code or env files in production |
 
 ---
 
 ## CI/CD Pipeline
 
-The project uses a GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) with 9 stages following the shift-left security principle:
+```mermaid
+flowchart LR
+    PUSH["git push\nmain"] --> PAR
 
-| Stage | Tool | Purpose |
-|-------|------|---------|
-| 1. Lint | Flake8 | Code quality and PEP 8 compliance |
-| 2. SAST | CodeQL | Semantic code analysis (Python + JavaScript) |
-| 3. SCA | Snyk | Dependency vulnerability scanning |
-| 5. Secrets | Gitleaks | Detect committed secrets in git history |
-| 6. SBOM | CycloneDX | Software Bill of Materials (JSON + XML) |
-| 7. Test | pytest | Unit and integration tests with coverage |
-| 8. Docker Build | Docker Buildx | Build container image with GitHub Actions cache |
-| 9. Trivy Scan | Trivy | Container vulnerability scanning (SARIF upload to GitHub Security) |
-| 10. Docker Push | Docker Push | Push to DockerHub on main/master branch |
-| 11. GitOps Deploy | Git Commit | Bot commits the new Docker tag to `helm/puresecure/values.yaml` to trigger ArgoCD sync |
+    subgraph PAR["Parallel (every push)"]
+        L["Lint\nFlake8"]
+        S["SAST\nCodeQL"]
+        SCA["SCA\nSnyk"]
+        SEC["Secrets\nGitleaks"]
+        SBOM["SBOM\nCycloneDX"]
+        T["Tests\npytest + coverage"]
+    end
 
-Stages 1--7 run in parallel on every push and pull request. Stages 8--11 run sequentially on push to `main`/`master` after all other stages pass.
+    PAR --> BUILD["Docker Build\n(Buildx + cache)"]
+    BUILD --> SCAN["Trivy Scan\n(SARIF → GitHub Security)"]
+    SCAN --> DPUSH["Docker Push\nDockerHub :latest + :sha"]
+    DPUSH --> GITOPS["GitOps Commit\nUpdate image tag\nin values.yaml"]
+    GITOPS --> ARGO["ArgoCD\nauto-syncs AKS"]
+```
 
-### DockerHub Deployment
-
-The pipeline automatically builds the Docker image and pushes it to DockerHub with two tags:
-
-- **`latest`** -- always points to the most recent main branch build
-- **`<short-sha>`** -- the 7-character commit SHA for precise version tracking
-
-**Required repository secrets:**
+**Required GitHub secrets:**
 
 | Secret | Description |
 |--------|-------------|
-| `DOCKERHUB_USERNAME` | DockerHub account username |
-| `DOCKERHUB_TOKEN` | DockerHub access token ([create one here](https://hub.docker.com/settings/security)) |
+| `DOCKERHUB_USERNAME` | DockerHub username |
+| `DOCKERHUB_TOKEN` | DockerHub access token |
+| `SNYK_TOKEN` | Snyk auth token |
 
-### Running the Pipeline Locally
+---
+
+## Production Deployment
+
+The app runs on **Azure Kubernetes Service** behind **Traefik** with automatic TLS.
+
+| Service | URL |
+|---------|-----|
+| CWE Explorer | https://reondev.top |
+| Grafana | https://grafana.reondev.top |
+| ArgoCD | https://argocd.reondev.top |
+| Prometheus | `kubectl port-forward svc/prometheus 9090` |
+| Locust | `kubectl port-forward svc/locust 8089` |
+
+### Infrastructure (Terraform)
 
 ```bash
-# Lint
-flake8 app/ tests/ --max-line-length=100
+cd terraform/
+cp terraform.tfvars.example terraform.tfvars
+# Fill in your values
+terraform init
+terraform plan
+terraform apply
+```
 
-# Security scan
-bandit -r app/ -ll
+Provisions: AKS cluster, Azure Key Vault, Managed Identities (ESO + ExternalDNS), federated credentials, DNS zone.
 
-# Tests with coverage
-pytest tests/ -v --tb=short --cov=app
+### GitOps Flow
 
-# Docker build (local)
-docker build -t puresecure-cve-explorer .
+1. Push to `main` → GitHub Actions runs CI, pushes Docker image, commits new tag to `helm/puresecure/values.yaml`
+2. ArgoCD detects the commit → syncs the Helm chart to AKS
+3. External Secrets Operator pulls secrets from Azure Key Vault into K8s Secrets
+4. New pods roll out with zero downtime
+
+---
+
+## Development
+
+### Local Dev (without Docker)
+
+```bash
+python -m venv venv && source venv/bin/activate   # or venv\Scripts\activate on Windows
+pip install -r requirements.txt -r requirements-dev.txt
+
+export AZURE_TENANT_ID=your-tenant-id
+export AZURE_CLIENT_ID=your-client-id
+
+uvicorn app.main:app --reload
+# → http://localhost:8000
+```
+
+### Running Tests
+
+```bash
+pytest -v --tb=short               # all tests
+pytest tests/test_security.py -v   # specific module
+pytest --cov=app --cov-report=html # with coverage report
+```
+
+### Running Security Scans
+
+```bash
+bandit -r app/ -ll          # SAST
+flake8 app/ tests/          # lint
+gitleaks detect --source .  # secrets scan
 ```
 
 ---
 
-## Kubernetes Deployment
+## Data Sources
 
-The project deploys to **Azure Kubernetes Service (AKS)** with Traefik ingress, Let's Encrypt TLS, Microsoft Entra ID authentication, and Azure Key Vault secret management orchestrated flawlessly via **ArgoCD GitOps**.
-
-| Environment | Guide | Description |
-|-------------|-------|-------------|
-| **AKS Provisioning** | [docs/terraform-guide.md](docs/terraform-guide.md) | Terraform guide for provisioning the AKS cluster and Key Vault |
-| **AKS (Production - GitOps)** | [docs/cd-gitops-guide.md](docs/cd-gitops-guide.md) | **Primary Guide:** Full automated deployment using ArgoCD, Helm, Traefik, and Azure Key Vault |
-| **AKS (Legacy)** | [docs/aks-deployment.md](docs/aks-deployment.md) | Legacy manual `kubectl` pipeline guide |
-| **Docker Desktop (Local)** | [docs/kubernetes-deployment.md](docs/kubernetes-deployment.md) | Local K8s testing with port-forwarding |
-| **Developer Workflow** | [docs/developer-guide.md](docs/developer-guide.md) | End-to-end dev process: local → Docker → CI/CD → ArgoCD |
-
-### Production URLs
-
-| URL | Service | Auth |
-|-----|---------|------|
-| `https://reondev.top` | Main app (FastAPI) | Microsoft Entra ID (MSAL.js) |
-| `https://grafana.reondev.top` | Grafana dashboards | Microsoft Entra ID (OAuth) |
-| `https://argocd.reondev.top` | ArgoCD Dashboard | Local ArgoCD Admin |
-| `localhost:9090` (port-forward) | Prometheus metrics | Internal only |
-| `localhost:8089` (port-forward) | Locust load testing | Internal only |
+| Source | Data | Update Frequency |
+|--------|------|-----------------|
+| [NIST NVD API 2.0](https://nvd.nist.gov/developers/vulnerabilities) | CVE details, CVSS scores, affected products | Cached 24h per CVE |
+| [MITRE CWE XML](https://cwe.mitre.org/data/downloads.html) | 969+ weakness definitions | Downloaded at startup |
 
 ---
 
-## Acknowledgments
+## Acknowledgements
 
-- **[NIST NVD](https://nvd.nist.gov/)** -- National Vulnerability Database, the source of all CVE data
-- **[MITRE CWE](https://cwe.mitre.org/)** -- Common Weakness Enumeration definitions
-- **[FastAPI](https://fastapi.tiangolo.com/)** -- Modern Python web framework
-- **[Prometheus](https://prometheus.io/)** -- Metrics collection and alerting
-- **[Grafana](https://grafana.com/)** -- Observability dashboards
-- **[Locust](https://locust.io/)** -- Load testing framework
-- **[Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/)** -- Identity platform
+- **[NIST NVD](https://nvd.nist.gov/)** — National Vulnerability Database, source of all CVE data
+- **[MITRE CWE](https://cwe.mitre.org/)** — Common Weakness Enumeration definitions
+- **[FastAPI](https://fastapi.tiangolo.com/)** — Modern Python web framework
+- **[Prometheus](https://prometheus.io/)** + **[Grafana](https://grafana.com/)** — Observability stack
+- **[Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/)** — Alert routing and delivery
+- **[Locust](https://locust.io/)** — Load testing framework
+- **[ArgoCD](https://argoproj.github.io/cd/)** — GitOps continuous delivery
+- **[Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/)** — Identity platform
+
+---
+
+<div align="center">
+
+MIT License · Built by [Reon Britto](https://github.com/reonbritto)
+
+</div>
