@@ -50,49 +50,67 @@ graph TB
     end
 
     subgraph AzureAD["☁️ Microsoft Entra ID"]
-        JWKS["JWKS Endpoint\n(RS256 signing keys)"]
-        OAUTH["OAuth 2.0\nAuthorization Server"]
+        JWKS["🔑 JWKS Endpoint\nRS256 signing keys"]
+        OAUTH["🔐 OAuth 2.0\nAuthorization Server"]
     end
 
-    subgraph NVD["🛡️ NIST NVD"]
-        NVDAPI["NVD API 2.0\nservices.nvd.nist.gov"]
-        MITRE["MITRE CWE XML\n969+ weaknesses"]
+    subgraph NVD["🛡️ NIST / MITRE"]
+        NVDAPI["📡 NVD API 2.0\nservices.nvd.nist.gov"]
+        MITRE["📋 MITRE CWE XML\n969+ weaknesses"]
     end
 
     subgraph App["🐳 Docker Compose / AKS"]
         direction TB
 
-        subgraph Backend["FastAPI Application :8000"]
-            MAIN["main.py\nRoutes & Middleware"]
-            AUTH["auth.py\nJWT Validation"]
-            NVD_C["nvd_client.py\nRate-limited HTTP"]
-            CWE_P["cwe_parser.py\nXML Parser"]
-            CACHE["cache.py\nSQLite TTL Cache"]
-            SEC["security.py\nInput Validation"]
-            METRICS_M["metrics.py\nPrometheus Middleware"]
+        subgraph Backend["⚡ FastAPI Application :8000"]
+            MAIN["🚀 main.py\nRoutes & Middleware"]
+            AUTH["🔒 auth.py\nJWT Validation"]
+            NVD_C["🌐 nvd_client.py\nRate-limited HTTP"]
+            CWE_P["📂 cwe_parser.py\nXML Parser"]
+            CACHE["💾 cache.py\nSQLite TTL Cache"]
+            SEC["🛡️ security.py\nInput Validation"]
+            METRICS_M["📊 metrics.py\nPrometheus Middleware"]
         end
 
-        subgraph Observability["📊 Observability Stack"]
-            PROM["Prometheus :9090\nMetrics & Alerting Rules"]
-            GRAF["Grafana :3000\n18-panel Dashboard"]
-            ALERT["Alertmanager :9093\nEmail Alerts via Gmail"]
-            LOCUST["Locust :8089\nLoad Testing"]
+        subgraph Observability["📈 Observability Stack"]
+            PROM["🔥 Prometheus :9090\nMetrics & Alert Rules"]
+            GRAF["📊 Grafana :3000\n18-panel Dashboard"]
+            ALERT["🚨 Alertmanager :9093\nEmail via Gmail SMTP"]
+            LOCUST["🦗 Locust :8089\nLoad Testing"]
         end
 
-        DB[("SQLite\ncache.db\n24h TTL")]
+        DB[("🗄️ SQLite\ncache.db · 24h TTL")]
     end
 
-    USER -- "HTTPS / Bearer JWT" --> MAIN
+    USER -- "🔐 HTTPS / Bearer JWT" --> MAIN
     MAIN --> AUTH & NVD_C & CWE_P & SEC & METRICS_M
-    AUTH -- "Fetch JWKS (cached 1h)" --> JWKS
-    USER -- "OAuth 2.0 login" --> OAUTH
-    NVD_C -- "rate-limited (6s)" --> NVDAPI
-    CWE_P -- "startup download" --> MITRE
+    AUTH -- "fetch keys" --> JWKS
+    USER -- "login" --> OAUTH
+    NVD_C -- "⏱️ rate-limited 6s" --> NVDAPI
+    CWE_P -- "startup" --> MITRE
     NVD_C & CWE_P --> CACHE --> DB
-    METRICS_M -- "/metrics scrape" --> PROM
+    METRICS_M -- "/metrics" --> PROM
     PROM --> GRAF & ALERT
-    ALERT -- "Gmail SMTP" --> USER
-    LOCUST -- "load test HTTP" --> MAIN
+    ALERT -- "📧 email alert" --> USER
+    LOCUST -- "🔁 load test" --> MAIN
+
+    style USER fill:#1d4ed8,stroke:#3b82f6,color:#fff,rx:8
+    style JWKS fill:#7c3aed,stroke:#8b5cf6,color:#fff
+    style OAUTH fill:#6d28d9,stroke:#7c3aed,color:#fff
+    style NVDAPI fill:#b45309,stroke:#d97706,color:#fff
+    style MITRE fill:#92400e,stroke:#b45309,color:#fff
+    style MAIN fill:#065f46,stroke:#10b981,color:#fff
+    style AUTH fill:#dc2626,stroke:#ef4444,color:#fff
+    style NVD_C fill:#0e7490,stroke:#06b6d4,color:#fff
+    style CWE_P fill:#0e7490,stroke:#06b6d4,color:#fff
+    style CACHE fill:#5b21b6,stroke:#7c3aed,color:#fff
+    style SEC fill:#b91c1c,stroke:#dc2626,color:#fff
+    style METRICS_M fill:#166534,stroke:#22c55e,color:#fff
+    style PROM fill:#c2410c,stroke:#f97316,color:#fff
+    style GRAF fill:#b45309,stroke:#f59e0b,color:#fff
+    style ALERT fill:#991b1b,stroke:#ef4444,color:#fff
+    style LOCUST fill:#1e40af,stroke:#3b82f6,color:#fff
+    style DB fill:#374151,stroke:#6b7280,color:#fff
 ```
 
 ### Production Deployment (AKS + GitOps)
@@ -100,72 +118,94 @@ graph TB
 ```mermaid
 graph LR
     subgraph Dev["👨‍💻 Developer"]
-        CODE["git push\nmain branch"]
+        CODE["📝 git push\nmain branch"]
     end
 
-    subgraph CI["⚙️ GitHub Actions"]
+    subgraph CI["⚙️ GitHub Actions CI/CD"]
         direction TB
-        LINT["1. Lint (Flake8)"]
-        SAST["2. SAST (CodeQL)"]
-        SCA["3. SCA (Snyk)"]
-        SECRET["4. Secrets (Gitleaks)"]
-        SBOM["5. SBOM (CycloneDX)"]
-        TEST["6. Tests (pytest)"]
-        BUILD["7. Docker Build"]
-        TRIVY["8. Trivy Scan"]
-        PUSH["9. DockerHub Push"]
-        GITOPS["10. GitOps Commit\n(update image tag in Helm values)"]
+        LINT["🔍 Lint\nFlake8"]
+        SAST["🔬 SAST\nCodeQL"]
+        SCA["📦 SCA\nSnyk"]
+        SECRET["🕵️ Secrets\nGitleaks"]
+        SBOM["📄 SBOM\nCycloneDX"]
+        TEST["✅ Tests\npytest"]
+        BUILD["🐳 Docker\nBuildx"]
+        TRIVY["🔐 Trivy\nContainer Scan"]
+        PUSH["🚀 Push\nDockerHub"]
+        GITOPS["🔄 GitOps\nUpdate image tag"]
 
         LINT --> SAST --> SCA --> SECRET --> SBOM --> TEST --> BUILD --> TRIVY --> PUSH --> GITOPS
     end
 
-    subgraph GitOps["🔄 ArgoCD (AKS)"]
-        ARGO["ArgoCD\nWatches main branch"]
-        HELM["Helm Chart\npuresecure/"]
+    subgraph GitOps["🔄 GitOps"]
+        ARGO["🐙 ArgoCD\nWatches main branch"]
+        HELM["⎈ Helm Chart\npuresecure/"]
     end
 
     subgraph K8s["☸️ Azure Kubernetes Service"]
         direction TB
-        TRAEFIK["Traefik Ingress\n+ Let's Encrypt TLS"]
-        APP_POD["App Pods"]
-        PROM_POD["Prometheus"]
-        GRAF_POD["Grafana + Alertmanager"]
+        TRAEFIK["🌐 Traefik Ingress\nLet's Encrypt TLS"]
+        APP_POD["⚡ App Pods\nFastAPI"]
+        PROM_POD["🔥 Prometheus\n+ Grafana"]
 
         subgraph Secrets["🔐 Secret Management"]
-            ESO["External Secrets Operator"]
-            KV["Azure Key Vault"]
-            MI["Workload Identity\n(Managed Identity)"]
+            ESO["🔁 External Secrets\nOperator"]
+            KV["🏦 Azure\nKey Vault"]
+            MI["🪪 Workload\nIdentity"]
         end
     end
 
     CODE --> CI
-    GITOPS -- "commits values.yaml" --> ARGO
-    ARGO --> HELM --> TRAEFIK --> APP_POD
-    ESO --> KV --> MI
-    APP_POD --> ESO
+    GITOPS -- "📝 commits values.yaml" --> ARGO
+    ARGO --> HELM --> TRAEFIK --> APP_POD & PROM_POD
+    MI --> KV --> ESO --> APP_POD
+
+    style CODE fill:#1f2937,stroke:#4b5563,color:#f9fafb
+    style LINT fill:#166534,stroke:#22c55e,color:#fff
+    style SAST fill:#1e40af,stroke:#3b82f6,color:#fff
+    style SCA fill:#0e7490,stroke:#06b6d4,color:#fff
+    style SECRET fill:#6d28d9,stroke:#8b5cf6,color:#fff
+    style SBOM fill:#0f766e,stroke:#14b8a6,color:#fff
+    style TEST fill:#065f46,stroke:#10b981,color:#fff
+    style BUILD fill:#1d4ed8,stroke:#60a5fa,color:#fff
+    style TRIVY fill:#b91c1c,stroke:#ef4444,color:#fff
+    style PUSH fill:#0369a1,stroke:#38bdf8,color:#fff
+    style GITOPS fill:#7c2d12,stroke:#f97316,color:#fff
+    style ARGO fill:#312e81,stroke:#818cf8,color:#fff
+    style HELM fill:#1e3a5f,stroke:#60a5fa,color:#fff
+    style TRAEFIK fill:#065f46,stroke:#34d399,color:#fff
+    style APP_POD fill:#064e3b,stroke:#10b981,color:#fff
+    style PROM_POD fill:#7c2d12,stroke:#fb923c,color:#fff
+    style ESO fill:#4c1d95,stroke:#a78bfa,color:#fff
+    style KV fill:#0c4a6e,stroke:#38bdf8,color:#fff
+    style MI fill:#1e1b4b,stroke:#818cf8,color:#fff
 ```
 
 ### Authentication Flow
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant FE as Browser (MSAL.js)
-    participant API as FastAPI
-    participant AZ as Microsoft Entra ID
+    actor User as 👤 User
+    participant FE as 🌐 Browser<br/>(MSAL.js)
+    participant API as ⚡ FastAPI
+    participant AZ as ☁️ Microsoft<br/>Entra ID
 
-    User->>FE: Open app
-    FE->>API: GET /api/config
-    API-->>FE: { client_id, tenant_id }
-    FE->>AZ: OAuth 2.0 login (openid + profile + email)
-    AZ-->>FE: JWT access token (RS256)
-    User->>FE: Search CVE / Browse CWE
-    FE->>API: GET /api/cwe?query=sql-injection<br/>Authorization: Bearer <token>
-    API->>AZ: Fetch JWKS keys (cached 1 hour)
-    AZ-->>API: RSA public keys
-    API->>API: Validate RS256 signature + audience
-    API-->>FE: JSON response
-    FE-->>User: Rendered page (XSS-safe escapeHTML)
+    User->>+FE: Open app
+    FE->>+API: GET /api/config
+    API-->>-FE: ✅ { client_id, tenant_id }
+    FE->>+AZ: 🔐 OAuth 2.0 login<br/>openid + profile + email
+    AZ-->>-FE: 🎟️ JWT access token (RS256)
+    FE-->>-User: 🏠 App ready
+
+    Note over User,AZ: ── Authenticated Request Flow ──
+
+    User->>+FE: Search CVE / Browse CWE
+    FE->>+API: GET /api/cwe?query=injection<br/>Authorization: Bearer &lt;token&gt;
+    API->>+AZ: 🔑 Fetch JWKS keys (cached 1h)
+    AZ-->>-API: RSA public keys
+    API->>API: ✅ Validate RS256 + audience
+    API-->>-FE: 📦 JSON response
+    FE-->>-User: 🖥️ Rendered page (XSS-safe)
 ```
 
 ---
@@ -445,18 +485,21 @@ The pre-provisioned **CWE Explorer — API Monitoring** dashboard has 18 panels 
 
 ```mermaid
 graph LR
-    REQ["Incoming\nRequest"] --> CORS["CORS\nAllowlist"]
-    CORS --> JWT["JWT Validation\nRS256 + JWKS\nAudience check"]
-    JWT --> INPUT["Input Validation\nCVE regex · CWE regex\n200-char limit · allowlist"]
-    INPUT --> CACHE["Cache Layer\nParameterised SQL\n(no injection)"]
-    CACHE --> NVD["NVD API\nRate limited\n6s interval"]
+    REQ(["🌐 Incoming\nRequest"])
+    CORS["🛡️ CORS\nOrigin Allowlist\nGET-only"]
+    JWT["🔐 JWT Validation\nRS256 · JWKS cached 1h\nAudience check"]
+    INPUT["🔍 Input Validation\nCVE regex · CWE regex\n200-char limit · allowlist"]
+    SQL["💾 Cache Layer\nParameterised SQL\nNo injection possible"]
+    NVD(["✅ NVD API\nRate limited · 6s\nSafe external call"])
 
-    style REQ fill:#1e293b,stroke:#475569,color:#e2e8f0
-    style CORS fill:#7c3aed,stroke:#6d28d9,color:#fff
-    style JWT fill:#dc2626,stroke:#b91c1c,color:#fff
-    style INPUT fill:#d97706,stroke:#b45309,color:#fff
-    style CACHE fill:#0891b2,stroke:#0e7490,color:#fff
-    style NVD fill:#16a34a,stroke:#15803d,color:#fff
+    REQ --> CORS --> JWT --> INPUT --> SQL --> NVD
+
+    style REQ fill:#1e293b,stroke:#94a3b8,color:#e2e8f0
+    style CORS fill:#5b21b6,stroke:#a78bfa,color:#fff
+    style JWT fill:#991b1b,stroke:#fca5a5,color:#fff
+    style INPUT fill:#92400e,stroke:#fcd34d,color:#fff
+    style SQL fill:#075985,stroke:#7dd3fc,color:#fff
+    style NVD fill:#065f46,stroke:#6ee7b7,color:#fff
 ```
 
 | Layer | Implementation |
@@ -479,22 +522,35 @@ graph LR
 
 ```mermaid
 flowchart LR
-    PUSH["git push\nmain"] --> PAR
+    PUSH(["📝 git push\nmain"]):::push --> PAR
 
-    subgraph PAR["Parallel (every push)"]
-        L["Lint\nFlake8"]
-        S["SAST\nCodeQL"]
-        SCA["SCA\nSnyk"]
-        SEC["Secrets\nGitleaks"]
-        SBOM["SBOM\nCycloneDX"]
-        T["Tests\npytest + coverage"]
+    subgraph PAR["⚡ Parallel — runs on every push"]
+        L["🔍 Lint\nFlake8"]:::lint
+        S["🔬 SAST\nCodeQL"]:::sast
+        SCA["📦 SCA\nSnyk"]:::sca
+        SEC["🕵️ Secrets\nGitleaks"]:::sec
+        SBOM["📄 SBOM\nCycloneDX"]:::sbom
+        T["✅ Tests\npytest + coverage"]:::test
     end
 
-    PAR --> BUILD["Docker Build\n(Buildx + cache)"]
-    BUILD --> SCAN["Trivy Scan\n(SARIF → GitHub Security)"]
-    SCAN --> DPUSH["Docker Push\nDockerHub :latest + :sha"]
-    DPUSH --> GITOPS["GitOps Commit\nUpdate image tag\nin values.yaml"]
-    GITOPS --> ARGO["ArgoCD\nauto-syncs AKS"]
+    PAR --> BUILD["🐳 Docker Build\nBuildx + cache"]:::build
+    BUILD --> SCAN["🔐 Trivy Scan\nSARIF → GitHub Security"]:::trivy
+    SCAN --> DPUSH["🚀 Docker Push\nDockerHub :latest + :sha"]:::dpush
+    DPUSH --> GITOPS["🔄 GitOps Commit\nUpdate image tag\nin values.yaml"]:::gitops
+    GITOPS --> ARGO["🐙 ArgoCD\nauto-syncs AKS"]:::argo
+
+    classDef push fill:#1f2937,stroke:#6b7280,color:#f9fafb
+    classDef lint fill:#166534,stroke:#4ade80,color:#fff
+    classDef sast fill:#1e3a8a,stroke:#60a5fa,color:#fff
+    classDef sca fill:#0e7490,stroke:#22d3ee,color:#fff
+    classDef sec fill:#5b21b6,stroke:#a78bfa,color:#fff
+    classDef sbom fill:#0f766e,stroke:#2dd4bf,color:#fff
+    classDef test fill:#065f46,stroke:#34d399,color:#fff
+    classDef build fill:#1d4ed8,stroke:#93c5fd,color:#fff
+    classDef trivy fill:#991b1b,stroke:#fca5a5,color:#fff
+    classDef dpush fill:#0369a1,stroke:#7dd3fc,color:#fff
+    classDef gitops fill:#7c2d12,stroke:#fb923c,color:#fff
+    classDef argo fill:#312e81,stroke:#a5b4fc,color:#fff
 ```
 
 **Required GitHub secrets:**
