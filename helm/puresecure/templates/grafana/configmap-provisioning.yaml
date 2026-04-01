@@ -12,6 +12,7 @@ data:
 
     datasources:
       - name: Prometheus
+        uid: prometheus
         type: prometheus
         access: proxy
         url: http://prometheus:{{ .Values.prometheus.port }}

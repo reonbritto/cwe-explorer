@@ -10,7 +10,9 @@ spec:
   routes:
     - match: Host(`argocd.reondev.top`)
       kind: Rule
-
+      middlewares:
+        - name: redirect-https
+          namespace: puresecure
       services:
         - name: argocd-server
           port: 80
@@ -27,7 +29,6 @@ spec:
   routes:
     - match: Host(`argocd.reondev.top`)
       kind: Rule
-
       services:
         - name: argocd-server
           port: 80

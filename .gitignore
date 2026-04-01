@@ -11,8 +11,13 @@ venv/
 .claude/
 .gemini/
 
-# Cache & Data
+# Claude Code local settings (per-machine, not project config)
+.claude/settings.local.json
+
+# Cache & Runtime Data — exclude large/generated files, keep the placeholder
 data/cache.db
+data/cache.db-shm
+data/cache.db-wal
 data/cve_cache.db
 data/*.xml
 data/*.xml.zip
@@ -44,22 +49,14 @@ Thumbs.db
 *.pem
 *.key
 
-# Terraform
+# Terraform — ignore state and secrets, but KEEP the lockfile (it pins provider versions)
 terraform/.terraform/
-terraform/.terraform.lock.hcl
 terraform/*.tfstate
 terraform/*.tfstate.backup
 terraform/terraform.tfvars
 terraform/*.auto.tfvars
 
-# Docker
-.dockerignore
-
-# Monitoring data (Prometheus/Grafana volumes)
+# Monitoring volume data (docker-compose named volumes written to host)
 prometheus-data/
 grafana-data/
-
-.docs
-docs/
-
-data/
+alertmanager-data/

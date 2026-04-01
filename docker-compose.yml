@@ -14,8 +14,10 @@ services:
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
       - SERVICE_API_KEY=${SERVICE_API_KEY}
       - GRAFANA_URL=http://localhost:3000
+      - ARGOCD_URL=http://localhost:8080
       - PROMETHEUS_URL=http://localhost:9090
       - LOCUST_URL=http://localhost:8089
+      - ALERTMANAGER_URL=http://localhost:9093
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/health').raise_for_status()"]
@@ -35,10 +37,39 @@ services:
       - prometheus-data:/prometheus
     depends_on:
       - web
+      - alertmanager
     restart: unless-stopped
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.retention.time=7d"
+
+  # ── Alertmanager ─────────────────────────────────────────
+  # Uses envsubst to substitute ALERTMANAGER_SMTP_USERNAME / _PASSWORD into the
+  # config template before starting, so secrets never sit in the config file.
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml.tmpl:ro
+      - ./monitoring/alertmanager/templates:/etc/alertmanager/templates:ro
+      - alertmanager-data:/alertmanager
+    environment:
+      - ALERTMANAGER_SMTP_USERNAME=${ALERTMANAGER_SMTP_USERNAME}
+      - ALERTMANAGER_SMTP_PASSWORD=${ALERTMANAGER_SMTP_PASSWORD}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        sed
+        -e "s/\$${ALERTMANAGER_SMTP_USERNAME}/$$ALERTMANAGER_SMTP_USERNAME/g"
+        -e "s/\$${ALERTMANAGER_SMTP_PASSWORD}/$$ALERTMANAGER_SMTP_PASSWORD/g"
+        /etc/alertmanager/alertmanager.yml.tmpl
+        > /tmp/alertmanager-resolved.yml
+        && exec /bin/alertmanager
+        --config.file=/tmp/alertmanager-resolved.yml
+        --storage.path=/alertmanager
+        --web.external-url=http://localhost:9093
+    restart: unless-stopped
 
   # ── Grafana ──────────────────────────────────────────────
   grafana:
@@ -56,18 +87,28 @@ services:
       - GF_USERS_AUTO_ASSIGN_ORG=true
       - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Viewer
       # ── Azure AD OAuth (Microsoft login) ──
-      - GF_AUTH_AZUREAD_ENABLED=${GF_AUTH_AZUREAD_ENABLED:-false}
+      # Azure AD OAuth — enabled for both local and production.
+      # Redirect URI http://localhost:3000/login/azuread must be registered
+      # in the Azure App Registration (already done).
+      - GF_AUTH_AZUREAD_ENABLED=${GF_AUTH_AZUREAD_ENABLED:-true}
       - GF_AUTH_AZUREAD_NAME=Microsoft
       - GF_AUTH_AZUREAD_ALLOW_SIGN_UP=true
       - GF_AUTH_AZUREAD_AUTO_LOGIN=false
       - GF_AUTH_AZUREAD_CLIENT_ID=${AZURE_CLIENT_ID}
-      - GF_AUTH_AZUREAD_CLIENT_SECRET=${GF_AUTH_AZUREAD_CLIENT_SECRET:-}
+      - GF_AUTH_AZUREAD_CLIENT_SECRET=${GF_AUTH_AZUREAD_CLIENT_SECRET}
       - GF_AUTH_AZUREAD_SCOPES=openid profile email User.Read
       - GF_AUTH_AZUREAD_AUTH_URL=https://login.microsoftonline.com/common/oauth2/v2.0/authorize
       - GF_AUTH_AZUREAD_TOKEN_URL=https://login.microsoftonline.com/common/oauth2/v2.0/token
+      # Skip org role sync — allows personal Microsoft accounts (outlook.com / live.com)
+      # that are not members of the Azure AD tenant to log in as Viewer
+      - GF_AUTH_AZUREAD_SKIP_ORG_ROLE_SYNC=true
+      - GF_AUTH_AZUREAD_ALLOWED_ORGANIZATIONS=
+      # Use 9188040d issuer for personal accounts (consumers endpoint)
+      - GF_AUTH_AZUREAD_ALLOWED_GROUPS=
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_SERVER_ROOT_URL=http://localhost:3000
       - GF_SERVER_DOMAIN=localhost
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/cwe-explorer.json
     depends_on:
       - prometheus
     restart: unless-stopped
@@ -89,3 +130,4 @@ services:
 volumes:
   prometheus-data:
   grafana-data:
+  alertmanager-data:

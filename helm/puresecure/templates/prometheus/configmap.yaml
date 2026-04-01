@@ -12,6 +12,13 @@ data:
       scrape_interval: 15s
       evaluation_interval: 15s
 
+    # Forward fired alerts to Alertmanager
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+                - "alertmanager:{{ .Values.alertmanager.port }}"
+
     rule_files:
       - /etc/prometheus/rules/recording_rules.yml
       - /etc/prometheus/rules/alerting_rules.yml
@@ -28,6 +35,12 @@ data:
       - job_name: "prometheus"
         static_configs:
           - targets: ["localhost:{{ .Values.prometheus.port }}"]
+
+      {{- if .Values.alertmanager.enabled }}
+      - job_name: "alertmanager"
+        static_configs:
+          - targets: ["alertmanager:{{ .Values.alertmanager.port }}"]
+      {{- end }}
 
   recording_rules.yml: |
     groups:

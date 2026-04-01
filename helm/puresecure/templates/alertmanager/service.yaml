@@ -1,0 +1,18 @@
+{{- if .Values.alertmanager.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "puresecure.alertmanager.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "puresecure.alertmanager.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.alertmanager.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

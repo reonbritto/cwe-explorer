@@ -25,4 +25,6 @@ data:
   GF_AUTH_AZUREAD_TOKEN_URL: {{ .Values.grafana.auth.azuread.tokenUrl | quote }}
   # -- Login form
   GF_AUTH_DISABLE_LOGIN_FORM: {{ .Values.grafana.auth.disableLoginForm | quote }}
+  # -- Home dashboard: open "CWE Explorer — API Monitoring" immediately after login
+  GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: "/var/lib/grafana/dashboards/cwe-explorer.json"
 {{- end }}

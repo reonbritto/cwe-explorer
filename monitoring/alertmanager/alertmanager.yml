@@ -1,0 +1,99 @@
+global:
+  # How long to wait before sending a notification again if it has already been sent
+  resolve_timeout: 5m
+
+  # SMTP configuration — uses Gmail as the sending relay.
+  #
+  # For LOCAL DEV: set these in your .env file and docker-compose will run envsubst
+  # to produce /etc/alertmanager/alertmanager-resolved.yml before starting Alertmanager.
+  #   ALERTMANAGER_SMTP_USERNAME=yourname@gmail.com
+  #   ALERTMANAGER_SMTP_PASSWORD=xxxx-xxxx-xxxx-xxxx   (Gmail App Password)
+  #
+  # Generate a Gmail App Password (requires 2FA) at:
+  #   https://myaccount.google.com/apppasswords
+  smtp_smarthost: "smtp.gmail.com:587"
+  smtp_from: "PureSecure Alerts <${ALERTMANAGER_SMTP_USERNAME}>"
+  smtp_auth_username: "${ALERTMANAGER_SMTP_USERNAME}"
+  smtp_auth_password: "${ALERTMANAGER_SMTP_PASSWORD}"
+  smtp_require_tls: true
+
+# Load email HTML/text templates from the templates directory
+templates:
+  - "/etc/alertmanager/templates/*.tmpl"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Routing tree
+# ─────────────────────────────────────────────────────────────────────────────
+route:
+  # Default receiver for anything not matched below
+  receiver: "email-critical"
+
+  # Group alerts that share the same alertname + severity together
+  group_by: ["alertname", "severity"]
+
+  # Wait this long to batch up alerts before sending the first notification
+  group_wait: 30s
+
+  # After a group is first notified, wait this long before sending new alerts
+  # added to the same group
+  group_interval: 5m
+
+  # How long to wait before re-notifying a group that has already been notified
+  repeat_interval: 4h
+
+  routes:
+    # ── CRITICAL alerts → immediate email ──────────────────────────────────
+    - match:
+        severity: critical
+      receiver: "email-critical"
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # ── WARNING alerts → batched email ─────────────────────────────────────
+    - match:
+        severity: warning
+      receiver: "email-warning"
+      group_wait: 60s
+      repeat_interval: 4h
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Inhibit Rules — suppress lower-severity when higher is already firing
+# ─────────────────────────────────────────────────────────────────────────────
+inhibit_rules:
+  # If APIDown (critical) is firing, suppress all other alerts for that job
+  - source_match:
+      alertname: "APIDown"
+      severity: "critical"
+    target_match_re:
+      severity: "warning|critical"
+    equal: ["job"]
+
+  # If CriticalP95Latency fires, suppress the less-severe HighP95Latency
+  - source_match:
+      alertname: "CriticalP95Latency"
+      severity: "critical"
+    target_match:
+      alertname: "HighP95Latency"
+      severity: "warning"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Receivers
+# ─────────────────────────────────────────────────────────────────────────────
+receivers:
+  - name: "email-critical"
+    email_configs:
+      - to: "reon@duck.com"
+        send_resolved: true
+        headers:
+          Subject: "🔴 [CRITICAL] {{ .GroupLabels.alertname }} — PureSecure"
+        html: '{{ template "email.puresecure.html" . }}'
+        text: '{{ template "email.puresecure.text" . }}'
+
+  - name: "email-warning"
+    email_configs:
+      - to: "reon@duck.com"
+        send_resolved: true
+        headers:
+          Subject: "🟡 [WARNING] {{ .GroupLabels.alertname }} — PureSecure"
+        html: '{{ template "email.puresecure.html" . }}'
+        text: '{{ template "email.puresecure.text" . }}'

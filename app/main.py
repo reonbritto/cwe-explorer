@@ -114,11 +114,13 @@ def api_config():
 
 @app.get("/api/services")
 def api_services():
-    """Return monitoring service URLs for the frontend nav (public)."""
+    """Return monitoring and infra service URLs for the frontend nav (public)."""
     return {
         "grafana": os.environ.get("GRAFANA_URL", "http://localhost:3000"),
         "prometheus": os.environ.get("PROMETHEUS_URL", "http://localhost:9090"),
         "locust": os.environ.get("LOCUST_URL", "http://localhost:8089"),
+        "argocd": os.environ.get("ARGOCD_URL", "https://argocd.reondev.top"),
+        "alertmanager": os.environ.get("ALERTMANAGER_URL", "http://localhost:9093"),
     }
 
 

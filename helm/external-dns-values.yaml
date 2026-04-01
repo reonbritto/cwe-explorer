@@ -1,11 +1,11 @@
-# Values for Bitnami ExternalDNS Helm Chart
-# Usage: helm upgrade --install external-dns bitnami/external-dns -n external-dns --create-namespace -f helm/external-dns-values.yaml
-provider: azure
+# Values for ExternalDNS Helm Chart (kubernetes-sigs/external-dns)
+# Usage: helm upgrade --install external-dns external-dns/external-dns \
+#          -n external-dns --create-namespace -f helm/external-dns-values.yaml
 
-env:
-  - name: AZURE_CLIENT_ID
-    value: "b6929fbe-f331-4e4c-8b6a-3c6fd282b4d9"
+provider:
+  name: azure
 
+# Azure credentials via Workload Identity (azure.json mounted as a secret volume)
 secretConfiguration:
   enabled: true
   mountPath: "/etc/kubernetes"
@@ -18,28 +18,40 @@ secretConfiguration:
         "useWorkloadIdentityExtension": true
       }
 
+# The Client ID of the User-Assigned Managed Identity with "DNS Zone Contributor" role
+env:
+  - name: AZURE_CLIENT_ID
+    value: "b6929fbe-f331-4e4c-8b6a-3c6fd282b4d9"
+
 serviceAccount:
   create: true
   name: external-dns-sa
   annotations:
-    # This instructs Kubernetes to use Azure Workload Identity to fetch Azure tokens automatically
     azure.workload.identity/client-id: "b6929fbe-f331-4e4c-8b6a-3c6fd282b4d9"
 
 podLabels:
   azure.workload.identity/use: "true"
 
-# Tell ExternalDNS to watch Traefik IngressRoutes and standard Services to grab IP addresses
+# Watch the Traefik Service (type LoadBalancer) to discover the external IP,
+# then create DNS records for any Service/Ingress annotated with external-dns.
+# We do NOT use traefik-proxy source because it requires manually annotating
+# each IngressRoute with the LB IP. Instead we annotate the Traefik Service
+# itself and use the service source — ExternalDNS will create records for all
+# hostnames listed in external-dns.alpha.kubernetes.io/hostname on that Service.
 sources:
   - service
   - ingress
-  - traefik-proxy
 
-# Restrict what domains it is allowed to modify in Azure DNS!
+# Restrict to only manage records under reondev.top
 domainFilters:
   - reondev.top
 
-# A unique identifier so ExternalDNS knows which records it created vs humans created
+# A unique owner ID so ExternalDNS knows which TXT records it owns
 txtOwnerId: "puresecure-aks"
 
+# RBAC — allows ExternalDNS to read Services across all namespaces
 rbac:
   create: true
+
+# Watch all namespaces
+namespaced: false

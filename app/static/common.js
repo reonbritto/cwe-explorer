@@ -193,7 +193,14 @@ async function loadServiceLinks() {
         document.querySelectorAll('[data-service]').forEach(function (el) {
             var key = el.getAttribute('data-service');
             if (urls[key]) {
-                el.href = urls[key];
+                // For Grafana, preserve any path suffix already in the href
+                // (e.g. /d/cwe-explorer-api) — only replace the origin/base.
+                if (key === 'grafana') {
+                    var suffix = el.getAttribute('data-service-path') || '/d/cwe-explorer-api';
+                    el.href = urls[key].replace(/\/$/, '') + suffix;
+                } else {
+                    el.href = urls[key];
+                }
                 el.style.display = '';
             } else {
                 el.style.display = 'none';

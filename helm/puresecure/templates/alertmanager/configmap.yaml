@@ -1,0 +1,78 @@
+{{- if .Values.alertmanager.enabled }}
+# ── Main Alertmanager configuration ──────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "puresecure.alertmanager.labels" . | nindent 4 }}
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      smtp_smarthost: {{ .Values.alertmanager.smtp.host | quote }}
+      smtp_from: {{ .Values.alertmanager.smtp.from | quote }}
+      smtp_auth_username_file: /etc/alertmanager/secrets/smtp-username
+      smtp_auth_password_file: /etc/alertmanager/secrets/smtp-password
+      smtp_require_tls: {{ .Values.alertmanager.smtp.requireTLS }}
+
+    templates:
+      - "/etc/alertmanager/templates/*.tmpl"
+
+    route:
+      receiver: "email-critical"
+      group_by: ["alertname", "severity"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+
+      routes:
+        - match:
+            severity: critical
+          receiver: "email-critical"
+          group_wait: 10s
+          repeat_interval: 1h
+
+        - match:
+            severity: warning
+          receiver: "email-warning"
+          group_wait: 60s
+          repeat_interval: 4h
+
+    inhibit_rules:
+      - source_match:
+          alertname: "APIDown"
+          severity: "critical"
+        target_match_re:
+          severity: "warning|critical"
+        equal: ["job"]
+
+      - source_match:
+          alertname: "CriticalP95Latency"
+          severity: "critical"
+        target_match:
+          alertname: "HighP95Latency"
+          severity: "warning"
+
+    receivers:
+      - name: "email-critical"
+        email_configs:
+          - to: {{ .Values.alertmanager.smtp.alertRecipient | quote }}
+            send_resolved: true
+            headers:
+              Subject: >-
+                {{`{{ template "puresecure.subjectCritical" . }}`}}
+            html: '{{`{{ template "email.puresecure.html" . }}`}}'
+            text: '{{`{{ template "email.puresecure.text" . }}`}}'
+
+      - name: "email-warning"
+        email_configs:
+          - to: {{ .Values.alertmanager.smtp.alertRecipient | quote }}
+            send_resolved: true
+            headers:
+              Subject: >-
+                {{`{{ template "puresecure.subjectWarning" . }}`}}
+            html: '{{`{{ template "email.puresecure.html" . }}`}}'
+            text: '{{`{{ template "email.puresecure.text" . }}`}}'
+{{- end }}

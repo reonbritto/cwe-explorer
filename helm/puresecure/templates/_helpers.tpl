@@ -70,3 +70,19 @@ Locust labels
 tier: testing
 {{ include "puresecure.labels" . }}
 {{- end }}
+
+{{/*
+Alertmanager selector labels
+*/}}
+{{- define "puresecure.alertmanager.selectorLabels" -}}
+app: alertmanager
+{{- end }}
+
+{{/*
+Alertmanager labels
+*/}}
+{{- define "puresecure.alertmanager.labels" -}}
+{{ include "puresecure.alertmanager.selectorLabels" . }}
+tier: monitoring
+{{ include "puresecure.labels" . }}
+{{- end }}

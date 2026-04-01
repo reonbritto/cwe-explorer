@@ -1,0 +1,122 @@
+{{- if .Values.alertmanager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "puresecure.alertmanager.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.alertmanager.replicas }}
+  selector:
+    matchLabels:
+      {{- include "puresecure.alertmanager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "puresecure.alertmanager.labels" . | nindent 8 }}
+      annotations:
+        # Force pod restart when config or templates change
+        checksum/config: {{ include (print $.Template.BasePath "/alertmanager/configmap.yaml") . | sha256sum }}
+        checksum/templates: {{ include (print $.Template.BasePath "/alertmanager/configmap-templates.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        fsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+      # Wait for ESO to populate the SMTP secret before starting Alertmanager.
+      # Without this, if the pod starts before ESO syncs from Key Vault the
+      # smtp_auth_*_file paths will be empty and Alertmanager will fail auth.
+      initContainers:
+        - name: wait-for-smtp-secret
+          image: busybox:1.36
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65534
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for SMTP secret files to be populated by ESO..."
+              until [ -s /etc/alertmanager/secrets/smtp-username ] && \
+                    [ -s /etc/alertmanager/secrets/smtp-password ]; do
+                echo "Secret files not ready yet, retrying in 5s..."
+                sleep 5
+              done
+              echo "SMTP secret files are ready."
+          volumeMounts:
+            - name: smtp-secret
+              mountPath: /etc/alertmanager/secrets
+              readOnly: true
+      containers:
+        - name: alertmanager
+          image: {{ .Values.alertmanager.image }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          args:
+            - "--config.file=/etc/alertmanager/alertmanager.yml"
+            - "--storage.path=/alertmanager"
+            - "--web.external-url=https://{{ .Values.alertmanager.externalUrl }}"
+          ports:
+            - name: http
+              containerPort: {{ .Values.alertmanager.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: {{ .Values.alertmanager.resources.requests.cpu }}
+              memory: {{ .Values.alertmanager.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.alertmanager.resources.limits.cpu }}
+              memory: {{ .Values.alertmanager.resources.limits.memory }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager/alertmanager.yml
+              subPath: alertmanager.yml
+              readOnly: true
+            - name: templates
+              mountPath: /etc/alertmanager/templates
+              readOnly: true
+            - name: smtp-secret
+              mountPath: /etc/alertmanager/secrets
+              readOnly: true
+              # Mounts two files:
+              #   /etc/alertmanager/secrets/smtp-username  (from ALERTMANAGER_SMTP_USERNAME)
+              #   /etc/alertmanager/secrets/smtp-password  (from ALERTMANAGER_SMTP_PASSWORD)
+            - name: storage
+              mountPath: /alertmanager
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-config
+        - name: templates
+          configMap:
+            name: alertmanager-templates
+        - name: smtp-secret
+          secret:
+            secretName: alertmanager-smtp-secret
+            items:
+              - key: ALERTMANAGER_SMTP_USERNAME
+                path: smtp-username
+              - key: ALERTMANAGER_SMTP_PASSWORD
+                path: smtp-password
+        - name: storage
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+{{- end }}

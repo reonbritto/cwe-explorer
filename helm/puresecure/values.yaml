@@ -47,8 +47,10 @@ app:
     PYTHONUNBUFFERED: "1"
     CORS_ORIGINS: "https://reondev.top"
     GRAFANA_URL: "https://grafana.reondev.top"
+    ARGOCD_URL: "https://argocd.reondev.top"
     PROMETHEUS_URL: "http://prometheus:9090"
     LOCUST_URL: "http://locust:8089"
+    ALERTMANAGER_URL: "http://alertmanager:9093"
 # ─────────────────────────────────────────────────────────
 #  Prometheus
 # ─────────────────────────────────────────────────────────
@@ -126,6 +128,30 @@ locust:
       cpu: 500m
       memory: 256Mi
 # ─────────────────────────────────────────────────────────
+#  Alertmanager
+# ─────────────────────────────────────────────────────────
+alertmanager:
+  enabled: true
+  image: prom/alertmanager:v0.27.0
+  replicas: 1
+  port: 9093
+  externalUrl: "alertmanager.reondev.top"   # used in --web.external-url (optional, for click-through links)
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  smtp:
+    # Gmail SMTP relay — username and password are injected from Key Vault via ESO
+    # and read by Alertmanager via smtp_auth_username_file / smtp_auth_password_file.
+    # smtp_from must match the Gmail sender address (no _file variant exists for this field).
+    host: "smtp.gmail.com:587"
+    from: "PureSecure Alerts <reonbritto@gmail.com>"
+    requireTLS: true
+    alertRecipient: "reon@duck.com"
+# ─────────────────────────────────────────────────────────
 #  Traefik IngressRoute
 # ─────────────────────────────────────────────────────────
 ingress:
@@ -159,6 +185,7 @@ externalSecrets:
   managedIdentityClientId: "590a44a6-e39a-46d2-9174-e8ae39f0eba2" # Set to the Azure Managed Identity Client ID
   secretStoreName: azure-keyvault
   refreshInterval: 1h
+  # Secrets written into the "app-secrets" Kubernetes Secret
   secrets:
     - kubeSecretKey: SERVICE_API_KEY
       remoteRef: service-api-key
@@ -170,3 +197,9 @@ externalSecrets:
       remoteRef: gf-admin-password
     - kubeSecretKey: GF_AUTH_AZUREAD_CLIENT_SECRET
       remoteRef: gf-auth-azuread-client-secret
+  # Secrets written into the "alertmanager-smtp-secret" Kubernetes Secret
+  alertmanagerSecrets:
+    - kubeSecretKey: ALERTMANAGER_SMTP_USERNAME
+      remoteRef: alertmanager-smtp-username
+    - kubeSecretKey: ALERTMANAGER_SMTP_PASSWORD
+      remoteRef: alertmanager-smtp-password
