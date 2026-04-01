@@ -2,9 +2,6 @@
 
 Uses fakeredis for in-process testing without a real Redis server.
 """
-import json
-import time
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -21,7 +18,6 @@ from app.cache import (
     refresh_active_user,
     remove_active_user,
     get_active_user_count,
-    MAX_CONCURRENT_USERS,
 )
 
 

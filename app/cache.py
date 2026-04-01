@@ -161,11 +161,16 @@ def get_cache_stats() -> dict:
             if cursor == 0:
                 break
 
-        info = r.info("memory")
+        try:
+            info = r.info("memory")
+            used_memory = info.get("used_memory", 0)
+        except redis.RedisError:
+            used_memory = 0
+
         return {
             "cve_entries": cve_count,
             "search_entries": search_count,
-            "redis_used_memory_bytes": info.get("used_memory", 0),
+            "redis_used_memory_bytes": used_memory,
         }
     except redis.RedisError as e:
         logger.warning("Redis get_cache_stats error: %s", e)
