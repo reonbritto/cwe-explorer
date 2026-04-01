@@ -183,29 +183,31 @@ graph LR
 
 ### Authentication Flow
 
-```mermaid
-sequenceDiagram
-    actor User as 👤 User
-    participant FE as 🌐 Browser<br/>(MSAL.js)
-    participant API as ⚡ FastAPI
-    participant AZ as ☁️ Microsoft<br/>Entra ID
+```sequenceDiagram
+    actor User as User
+    participant FE as Browser (MSAL.js)
+    participant API as FastAPI Backend
+    participant AZ as Microsoft Entra ID
 
-    User->>+FE: Open app
+    User->>+FE: Access application
     FE->>+API: GET /api/config
-    API-->>-FE: ✅ { client_id, tenant_id }
-    FE->>+AZ: 🔐 OAuth 2.0 login<br/>openid + profile + email
-    AZ-->>-FE: 🎟️ JWT access token (RS256)
-    FE-->>-User: 🏠 App ready
+    API-->>-FE: Return client_id and tenant_id
 
-    Note over User,AZ: ── Authenticated Request Flow ──
+    FE->>+AZ: Initiate OAuth 2.0 Authorization Code Flow\n(scopes: openid, profile, email)
+    AZ-->>-FE: Issue JWT access token (RS256)
+    FE-->>-User: Application initialized
 
-    User->>+FE: Search CVE / Browse CWE
-    FE->>+API: GET /api/cwe?query=injection<br/>Authorization: Bearer &lt;token&gt;
-    API->>+AZ: 🔑 Fetch JWKS keys (cached 1h)
-    AZ-->>-API: RSA public keys
-    API->>API: ✅ Validate RS256 + audience
-    API-->>-FE: 📦 JSON response
-    FE-->>-User: 🖥️ Rendered page (XSS-safe)
+    Note over User,AZ: Authenticated Request Flow
+
+    User->>+FE: Request data (CVE/CWE search)
+    FE->>+API: GET /api/cwe?query=injection\nAuthorization: Bearer <access_token>
+
+    API->>+AZ: Retrieve JWKS (cached, periodic refresh)
+    AZ-->>-API: Provide public signing keys
+
+    API->>API: Validate token (signature, issuer, audience, expiry)
+    API-->>-FE: Return JSON response
+    FE-->>-User: Render sanitized results
 ```
 
 ---
