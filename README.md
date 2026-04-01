@@ -183,7 +183,8 @@ graph LR
 
 ### Authentication Flow
 
-```sequenceDiagram
+```mermaid
+sequenceDiagram
     actor User as User
     participant FE as Browser (MSAL.js)
     participant API as FastAPI Backend
@@ -200,7 +201,7 @@ graph LR
     Note over User,AZ: Authenticated Request Flow
 
     User->>+FE: Request data (CVE/CWE search)
-    FE->>+API: GET /api/cwe?query=injection\nAuthorization: Bearer <access_token>
+    FE->>+API: GET /api/cwe?query=injection\nAuthorization: Bearer token
 
     API->>+AZ: Retrieve JWKS (cached, periodic refresh)
     AZ-->>-API: Provide public signing keys
