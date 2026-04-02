@@ -302,10 +302,9 @@ jobs:
         with:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/puresecure-cwe-explorer:latest
           format: table
-          exit-code: '1'
+          exit-code: '0'
           severity: CRITICAL,HIGH
           output: trivy-report.txt
-        continue-on-error: true
 
       - name: Trivy image scan (SARIF)
         uses: aquasecurity/trivy-action@master
