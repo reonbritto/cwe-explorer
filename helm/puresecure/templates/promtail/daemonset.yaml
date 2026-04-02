@@ -34,8 +34,9 @@ spec:
             httpGet:
               path: /ready
               port: http
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
+            failureThreshold: 10
           resources:
             requests:
               cpu: {{ .Values.promtail.resources.requests.cpu }}
