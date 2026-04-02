@@ -58,7 +58,7 @@
             "datasource": {"type": "loki", "uid": "loki"},
             "targets": [
                 {
-                    "expr": "{job=~\".+\"} |= \"AUTH user login\"",
+                    "expr": "{container=\"cwe-explorer\"} |= \"AUTH user login\"",
                     "refId": "A"
                 }
             ],
