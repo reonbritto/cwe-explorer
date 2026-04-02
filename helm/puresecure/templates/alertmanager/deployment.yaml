@@ -45,10 +45,22 @@ spec:
                 sleep 5
               done
               echo "SMTP secret files are ready."
+              # Alertmanager has no smtp_auth_username_file option, so we template
+              # the username from the mounted secret into the config at startup.
+              SMTP_USER=$(cat /etc/alertmanager/secrets/smtp-username)
+              sed "s/SMTP_USERNAME_PLACEHOLDER/${SMTP_USER}/" \
+                /etc/alertmanager/config-template/alertmanager.yml \
+                > /etc/alertmanager/rendered/alertmanager.yml
+              echo "Config rendered with SMTP username."
           volumeMounts:
             - name: smtp-secret
               mountPath: /etc/alertmanager/secrets
               readOnly: true
+            - name: config
+              mountPath: /etc/alertmanager/config-template
+              readOnly: true
+            - name: rendered-config
+              mountPath: /etc/alertmanager/rendered
       containers:
         - name: alertmanager
           image: {{ .Values.alertmanager.image }}
@@ -56,7 +68,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
           args:
-            - "--config.file=/etc/alertmanager/alertmanager.yml"
+            - "--config.file=/etc/alertmanager/rendered/alertmanager.yml"
             - "--storage.path=/alertmanager"
             - "--web.external-url=https://{{ .Values.alertmanager.externalUrl }}"
           ports:
@@ -83,9 +95,8 @@ spec:
               cpu: {{ .Values.alertmanager.resources.limits.cpu }}
               memory: {{ .Values.alertmanager.resources.limits.memory }}
           volumeMounts:
-            - name: config
-              mountPath: /etc/alertmanager/alertmanager.yml
-              subPath: alertmanager.yml
+            - name: rendered-config
+              mountPath: /etc/alertmanager/rendered
               readOnly: true
             - name: templates
               mountPath: /etc/alertmanager/templates
@@ -115,6 +126,8 @@ spec:
                 path: smtp-username
               - key: ALERTMANAGER_SMTP_PASSWORD
                 path: smtp-password
+        - name: rendered-config
+          emptyDir: {}
         - name: storage
           emptyDir: {}
         - name: tmp
