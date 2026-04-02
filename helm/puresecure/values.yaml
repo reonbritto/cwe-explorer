@@ -54,6 +54,10 @@ app:
     PROMETHEUS_URL: "http://prometheus:9090"
     LOCUST_URL: "http://locust:8089"
     ALERTMANAGER_URL: "http://alertmanager:9093"
+    LOKI_URL: "http://loki:3100"
+    REDIS_EXPORTER_URL: "http://redis-exporter:9121"
+    KUBE_STATE_METRICS_URL: "http://kube-state-metrics:8080"
+    NODE_EXPORTER_URL: "http://node-exporter:9100"
 # ─────────────────────────────────────────────────────────
 #  Redis (Cache + Concurrent User Tracking)
 # ─────────────────────────────────────────────────────────

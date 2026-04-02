@@ -217,10 +217,14 @@ def api_services():
     return {
         "grafana": os.environ.get("GRAFANA_URL", "http://localhost:3000"),
         "prometheus": os.environ.get("PROMETHEUS_URL", "http://localhost:9090"),
+        "alertmanager": os.environ.get("ALERTMANAGER_URL", "http://localhost:9093"),
+        "loki": os.environ.get("LOKI_URL", "http://localhost:3100"),
         "locust": os.environ.get("LOCUST_URL", "http://localhost:8089"),
         "argocd": os.environ.get("ARGOCD_URL", "https://argocd.reondev.top"),
-        "alertmanager": os.environ.get("ALERTMANAGER_URL", "http://localhost:9093"),
         "redis": os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
+        "redis-exporter": os.environ.get("REDIS_EXPORTER_URL", "http://localhost:9121"),
+        "kube-state-metrics": os.environ.get("KUBE_STATE_METRICS_URL", "http://localhost:8080"),
+        "node-exporter": os.environ.get("NODE_EXPORTER_URL", "http://localhost:9100"),
     }
 
 
