@@ -8,6 +8,12 @@ metadata:
     {{- include "puresecure.loki.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.loki.replicas }}
+  # Recreate is required — Loki uses a RWO PVC (single writer).
+  # RollingUpdate would start a new pod before the old one terminates,
+  # causing the new pod to fail with "failed to init delete store: timeout"
+  # because the filesystem lock is still held by the old pod.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "puresecure.loki.selectorLabels" . | nindent 6 }}

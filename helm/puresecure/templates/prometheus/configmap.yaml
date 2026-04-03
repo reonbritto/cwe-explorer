@@ -153,11 +153,9 @@ data:
         rules:
           - record: infra:node_cpu_usage:percent5m
             expr: >
-              100 - (
-                avg by (instance) (
-                  rate(node_cpu_seconds_total{mode="idle",job="node-exporter"}[5m])
-                ) * 100
-              )
+              (1 - avg by (instance) (
+                rate(node_cpu_seconds_total{mode="idle",job="node-exporter"}[5m])
+              )) * 100
           - record: infra:node_memory_usage:percent
             expr: >
               100 * (

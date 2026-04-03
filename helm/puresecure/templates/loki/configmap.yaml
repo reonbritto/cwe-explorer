@@ -43,13 +43,9 @@ data:
 
     compactor:
       working_directory: /loki/compactor
-      # delete_request_store is required for retention enforcement — without it
-      # retention_enabled has no effect and chunks are never deleted
-      delete_request_store: filesystem
       retention_enabled: true
       # Run compaction every 2 hours so old chunks are purged regularly
       compaction_interval: 2h
-      # Allow deletion API (used by compactor to remove expired chunks)
       retention_delete_delay: 2h
       retention_delete_worker_count: 1
 {{- end }}

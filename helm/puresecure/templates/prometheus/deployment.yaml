@@ -8,6 +8,11 @@ metadata:
     {{- include "puresecure.prometheus.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.prometheus.replicas }}
+  # Recreate is required — Prometheus uses a RWO PVC (single writer).
+  # RollingUpdate would start a new pod before the old one terminates,
+  # causing the new pod to fail with "lock DB directory: resource temporarily unavailable".
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "puresecure.prometheus.selectorLabels" . | nindent 6 }}
