@@ -22,6 +22,7 @@ from . import cache
 from . import analytics
 from . import attack_parser
 
+
 def _uk_time(*args):
     """Return current time in Europe/London (GMT in winter, BST in summer)."""
     import zoneinfo
