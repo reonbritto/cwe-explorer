@@ -20,6 +20,19 @@ spec:
       tolerations:
         - operator: Exists
           effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+                  - key: type
+                    operator: NotIn
+                    values:
+                      - virtual-kubelet
       containers:
         - name: node-exporter
           image: {{ .Values.nodeExporter.image }}
@@ -28,6 +41,7 @@ spec:
             - "--path.sysfs=/host/sys"
             - "--path.rootfs=/host/root"
             - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+            - "--no-collector.infiniband"
           ports:
             - name: metrics
               containerPort: {{ .Values.nodeExporter.port }}

@@ -1,3 +1,14 @@
+# -- HTTPS redirect middleware (must live in argocd namespace — Traefik blocks cross-namespace refs)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: argocd
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
 # -- ArgoCD HTTP -> HTTPS redirect
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -12,7 +23,6 @@ spec:
       kind: Rule
       middlewares:
         - name: redirect-https
-          namespace: puresecure
       services:
         - name: argocd-server
           port: 80

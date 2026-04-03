@@ -253,3 +253,42 @@ class TestSPAFallback:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
+
+    def test_sensitive_paths_return_404(self, client):
+        """Sensitive filenames must return 404 — not the SPA index.html.
+
+        These paths should never return 200 OK, which would give scanners
+        a false-positive signal that the file exists.
+        """
+        blocked = [
+            "/.env",
+            "/.env.local",
+            "/.env.production",
+            "/.env.prod",
+            "/.env.production.local",
+            "/.env.development.local",
+            "/.env.staging",
+            "/.env.example",
+            "/.git",
+            "/.gitignore",
+            "/Dockerfile",
+            "/docker-compose.yml",
+            "/docker-compose.yaml",
+            "/terraform.tfvars",
+            "/terraform.tfstate",
+            "/requirements.txt",
+            "/package.json",
+            "/package-lock.json",
+            "/.github",
+            "/.htaccess",
+            "/phpinfo.php",
+            "/wp-login.php",
+            "/server-status",
+            "/.DS_Store",
+        ]
+        for path in blocked:
+            response = client.get(path)
+            assert response.status_code == 404, (
+                f"Expected 404 for {path!r} but got {response.status_code} — "
+                "sensitive path must not return 200 OK"
+            )

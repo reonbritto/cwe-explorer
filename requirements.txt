@@ -6,3 +6,4 @@ defusedxml
 prometheus-client
 PyJWT[crypto]
 redis>=5.0
+tzdata

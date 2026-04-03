@@ -2,6 +2,7 @@
 import logging
 import os
 import time
+import datetime
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,11 +22,24 @@ from . import cache
 from . import analytics
 from . import attack_parser
 
-logger = logging.getLogger("cwe-explorer")
+def _uk_time(*args):
+    """Return current time in Europe/London (GMT in winter, BST in summer)."""
+    import zoneinfo
+    tz = zoneinfo.ZoneInfo("Europe/London")
+    return datetime.datetime.now(tz).timetuple()
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S %Z",
 )
+# Override formatter time converter on all root handlers to use UK time
+for _handler in logging.root.handlers:
+    if _handler.formatter:
+        _handler.formatter.converter = _uk_time
+
+logger = logging.getLogger("cwe-explorer")
 
 # In-memory CWE data loaded at startup
 cwe_data: List[CWEEntry] = []
@@ -615,17 +629,49 @@ app.mount(
 # SPA fallback: any non-API, non-asset route serves index.html
 _static_root = os.path.realpath(static_dir)
 
+# Paths that must never be served — return 404 immediately instead of
+# the SPA fallback so scanners/bots get no false-positive 200 signal.
+_BLOCKED_PATHS = {
+    # Environment / secrets files
+    ".env", ".env.local", ".env.development", ".env.production",
+    ".env.prod", ".env.staging", ".env.test", ".env.example",
+    ".env.production.local", ".env.development.local",
+    # Source control
+    ".git", ".gitignore", ".gitconfig",
+    # Config / infra files
+    "Dockerfile", "docker-compose.yml", "docker-compose.yaml",
+    "terraform.tfvars", "terraform.tfstate",
+    ".terraform",
+    # Dependency / package files
+    "requirements.txt", "package.json", "package-lock.json",
+    "yarn.lock", "Pipfile", "Pipfile.lock",
+    # CI / secrets
+    ".github", ".gitlab-ci.yml",
+    # Server config files
+    "web.config", ".htaccess", "nginx.conf",
+    # Common scanner targets
+    "phpinfo.php", "wp-admin", "wp-login.php",
+    "server-status", "server-info",
+    ".DS_Store",
+}
+
 
 @app.get("/{full_path:path}")
 async def spa_fallback(full_path: str):
     """Serve index.html for all client-side routes (React Router)."""
-    # If the requested path matches a real file, serve it —
-    # but only if the resolved path stays inside static_dir
-    # (prevents path traversal attacks like ../../etc/passwd)
+    # Block sensitive filenames — return 404 instead of the SPA so
+    # scanners don't receive a misleading 200 OK.
+    top_segment = full_path.lstrip("/").split("/")[0] if full_path else ""
+    if top_segment in _BLOCKED_PATHS:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    # Serve a real static file only if the resolved path stays inside
+    # static_dir (prevents path traversal attacks like ../../etc/passwd).
     if full_path:
         safe_path = os.path.realpath(os.path.join(static_dir, full_path))
         if safe_path.startswith(_static_root + os.sep) and os.path.isfile(safe_path):
             return FileResponse(safe_path)
+
     # Otherwise serve the SPA entry point
     index_path = os.path.join(static_dir, "index.html")
     if os.path.isfile(index_path):
