@@ -38,7 +38,7 @@ variable "alertmanager_smtp_password" {
 variable "location" {
   description = "Azure region for all resources"
   type        = string
-  default     = "uksouth"
+  default     = "canadacentral"
 }
 
 variable "resource_group_name" {
@@ -56,7 +56,7 @@ variable "cluster_name" {
 variable "node_vm_size" {
   description = "VM size for AKS node pool"
   type        = string
-  default     = "Standard_D2lds_v6"
+  default     = "Standard_B2as_v2"
 }
 
 variable "node_count" {

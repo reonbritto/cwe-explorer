@@ -44,6 +44,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     min_count            = var.node_min_count
     max_count            = var.node_max_count
     os_disk_size_gb      = 30
+    max_pods             = 110
 
     upgrade_settings {
       max_surge = "10%"
