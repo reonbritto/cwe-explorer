@@ -76,7 +76,7 @@ resource "azurerm_key_vault" "main" {
   resource_group_name        = azurerm_resource_group.main.name
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   sku_name                   = "standard"
-  rbac_authorization_enabled  = true
+  rbac_authorization_enabled = true
   soft_delete_retention_days = 90
   purge_protection_enabled   = false
 
@@ -187,8 +187,8 @@ resource "azurerm_federated_identity_credential" "eso" {
   name                      = "fc-puresecure-eso"
   user_assigned_identity_id = azurerm_user_assigned_identity.eso.id
   audience                  = ["api://AzureADTokenExchange"]
-  issuer              = azurerm_kubernetes_cluster.main.oidc_issuer_url
-  subject             = "system:serviceaccount:${var.app_namespace}:eso-service-account"
+  issuer                    = azurerm_kubernetes_cluster.main.oidc_issuer_url
+  subject                   = "system:serviceaccount:${var.app_namespace}:eso-service-account"
 }
 
 # ─────────────────────────────────────────────────────────
@@ -215,6 +215,6 @@ resource "azurerm_federated_identity_credential" "external_dns" {
   name                      = "fc-puresecure-external-dns"
   user_assigned_identity_id = azurerm_user_assigned_identity.external_dns.id
   audience                  = ["api://AzureADTokenExchange"]
-  issuer              = azurerm_kubernetes_cluster.main.oidc_issuer_url
-  subject             = "system:serviceaccount:external-dns:external-dns-sa"
+  issuer                    = azurerm_kubernetes_cluster.main.oidc_issuer_url
+  subject                   = "system:serviceaccount:external-dns:external-dns-sa"
 }

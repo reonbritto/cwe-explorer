@@ -56,7 +56,7 @@ variable "cluster_name" {
 variable "node_vm_size" {
   description = "VM size for AKS node pool"
   type        = string
-  default     = "Standard_B2as_v2"
+  default     = "Standard_D2as_v5"
 }
 
 variable "node_count" {
