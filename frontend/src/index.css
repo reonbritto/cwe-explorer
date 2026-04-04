@@ -531,7 +531,10 @@ a.mega-item:hover .mega-ext {
     text-align: center;
     color: #fff;
     position: relative;
-    overflow: hidden;
+    /* overflow: visible so the search suggestions dropdown can escape the hero banner.
+       Pseudo-elements (::before, ::after) use inset: 0 so they won't visibly overflow. */
+    overflow: visible;
+    z-index: 10;
 }
 .hero-banner::before {
     content: '';
