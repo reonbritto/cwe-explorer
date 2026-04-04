@@ -273,7 +273,7 @@ externalSecrets:
   enabled: true
   keyVaultName: kv-puresecure-prod
   tenantId: "d1d16433-e375-4076-a7ea-c57bb79df0de" # Azure tenant for Key Vault access (required by SecretStore)
-  managedIdentityClientId: "dd3cc2e9-c144-43b6-82c4-690e4f636b1c" # Set to the Azure Managed Identity Client ID
+  managedIdentityClientId: "57e7b37e-9aa3-4418-b8bc-6536ae9265a2" # Set to the Azure Managed Identity Client ID
   secretStoreName: azure-keyvault
   refreshInterval: 1h
   # Secrets written into the "app-secrets" Kubernetes Secret
